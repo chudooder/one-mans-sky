@@ -11,6 +11,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <memory>
 
 #include <glm/gtx/component_wise.hpp>
 #include <glm/gtx/rotate_vector.hpp>
@@ -75,7 +76,40 @@ int main(int argc, char* argv[])
 
 	std::vector<glm::vec4> floor_vertices;
 	std::vector<glm::uvec3> floor_faces;
-	create_floor(floor_vertices, floor_faces);
+	std::vector<glm::vec2> floor_uv;
+	create_floor(floor_vertices, floor_faces, floor_uv);
+
+	auto floor_img = std::make_shared<Image>();
+	int size = 8;	// 512
+
+	floor_img->width = pow(2, size);
+	floor_img->height = pow(2, size);
+	floor_img->stride = 3;
+
+	auto noise = perlin_noise(0, size, 4);
+	for(auto row : noise) {
+		for(float data : row) {
+			char val = (unsigned char) (255 * data);
+			// std::cout << (int) val << " ";
+			floor_img->bytes.push_back(val);
+			floor_img->bytes.push_back(val);
+			floor_img->bytes.push_back(val);
+		}
+		// std::cout << endl;
+	}
+
+	Material floor_mat = {
+		diffuse: glm::vec4(1.0, 1.0, 1.0, 1.0),
+		ambient: glm::vec4(),
+		specular: glm::vec4(),
+		shininess: 0.0f,
+		texture: floor_img,
+		offset: 0,
+		nfaces: 2
+	};
+
+	vector<Material> floor_mats;
+	floor_mats.push_back(floor_mat);
 
 	std::cout << "created floor" << std::endl;
 
@@ -132,10 +166,12 @@ int main(int argc, char* argv[])
 
 	RenderDataInput floor_pass_input;
 	floor_pass_input.assign(0, "vertex_position", floor_vertices.data(), floor_vertices.size(), 4, GL_FLOAT);
+	floor_pass_input.assign(1, "uv", floor_uv.data(), floor_uv.size(), 2, GL_FLOAT);
 	floor_pass_input.assign_index(floor_faces.data(), floor_faces.size(), 3);
+	floor_pass_input.useMaterials(floor_mats);
 	RenderPass floor_pass(-1,
 			floor_pass_input,
-			{ vertex_shader, geometry_shader, floor_fragment_shader},
+			{ vertex_shader, geometry_shader, fragment_shader},
 			{ floor_model, std_view, std_proj, std_light },
 			{ "fragment_color" }
 			);
@@ -165,7 +201,11 @@ int main(int argc, char* argv[])
 		if (draw_floor) {
 			floor_pass.setup();
 			// Draw our triangles.
-			CHECK_GL_ERROR(glDrawElements(GL_TRIANGLES, floor_faces.size() * 3, GL_UNSIGNED_INT, 0));
+			// CHECK_GL_ERROR(glDrawElements(GL_TRIANGLES, floor_faces.size() * 3, GL_UNSIGNED_INT, 0));
+		
+			int mid = 0;
+			while (floor_pass.renderWithMaterial(mid))
+				mid++;
 		}
 		
 		// Poll and swap.

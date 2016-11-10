@@ -32,8 +32,8 @@ void main() {
 		color = clamp(dot_nl * color + vec3(ambient) + vec3(spec), 0.0, 1.0);
 		fragment_color = vec4(color, alpha);
 	} else {
-		fragment_color = vec4(texcolor.rgb, 1.0);
+		fragment_color = vec4(texcolor.rgb, alpha);
 	}
-	// fragment_color = vec4(0.2, 0.2, 0.2, 0.5);
+	//fragment_color = vec4(0.2, 0.2, 0.2, 0.5);
 }
 )zzz"
