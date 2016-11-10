@@ -1,7 +1,6 @@
 #include "gui.h"
 #include "config.h"
 #include <jpegio.h>
-#include "bone_geometry.h"
 #include <iostream>
 #include <debuggl.h>
 #include <glm/gtc/matrix_access.hpp>
@@ -9,64 +8,6 @@
 #include <glm/gtx/transform.hpp>
 
 #define RAY_EPSILON 0.0005f
-
-bool IntersectCylinder(const glm::vec3& origin, const glm::vec3& direction,
-		float radius, float height, float* t)
-{
-
-	double y0 = origin.y;
-	double z0 = origin.z;
-	double y1 = direction.y;
-	double z1 = direction.z;
-
-	double a = y1*y1+z1*z1;
-	double b = 2.0*(y0*y1 + z0*z1);
-	double c = y0*y0 + z0*z0 - radius*radius;
-
-	if( 0.0 == a ) {
-		// This implies that x1 = 0.0 and y1 = 0.0, which further
-		// implies that the ray is aligned with the body of the cylinder,
-		// so no intersection.
-		return false;
-	}
-
-	double discriminant = b*b - 4.0*a*c;
-
-	if( discriminant < 0.0 ) {
-		return false;
-	}
-	
-	discriminant = sqrt( discriminant );
-
-	double t2 = (-b + discriminant) / (2.0 * a);
-
-	if( t2 <= RAY_EPSILON ) {
-		return false;
-	}
-
-	double t1 = (-b - discriminant) / (2.0 * a);
-
-	if( t1 > RAY_EPSILON ) {
-		// Two intersections.
-		glm::dvec3 P = glm::dvec3(origin) + glm::dvec3(direction) * t1;
-		double x = P[0];
-		if( x >= 0.0 && x <= height ) {
-			// It's okay.
-			*t = t1;
-			return true;
-		}
-	}
-
-	glm::dvec3 P = glm::dvec3(origin) + glm::dvec3(direction) * t2;
-	double x = P[0];
-	if( x >= 0.0 && x <= height ) {
-		*t = t2;
-		return true;
-	}
-
-	return false;
-}
-
 
 GUI::GUI(GLFWwindow* window)
 	:window_(window)
@@ -83,12 +24,6 @@ GUI::GUI(GLFWwindow* window)
 
 GUI::~GUI()
 {
-}
-
-void GUI::assignMesh(Mesh* mesh)
-{
-	mesh_ = mesh;
-	center_ = mesh_->getCenter();
 }
 
 void GUI::keyCallback(int key, int scancode, int action, int mods)
@@ -111,21 +46,8 @@ void GUI::keyCallback(int key, int scancode, int action, int mods)
 			roll_speed = -roll_speed_;
 		else
 			roll_speed = roll_speed_;
-		Bone* b = mesh_->skeleton.highlightedBone;
-		if(b != nullptr) {
-			glm::vec3 axis = glm::vec3(b->rotation[0]);	// tangent
-			glm::mat4 rot = glm::rotate(roll_speed, axis);
-			b->rotation = rot * b->rotation;
-			pose_changed_ = true;
-		}
 	} else if (key == GLFW_KEY_C && action != GLFW_RELEASE) {
 		fps_mode_ = !fps_mode_;
-	} else if (key == GLFW_KEY_LEFT_BRACKET && action == GLFW_RELEASE) {
-		mesh_->skeleton.highlightPrevBone();
-	} else if (key == GLFW_KEY_RIGHT_BRACKET && action == GLFW_RELEASE) {
-		mesh_->skeleton.highlightNextBone();
-	} else if (key == GLFW_KEY_T && action != GLFW_RELEASE) {
-		transparent_ = !transparent_;
 	}
 }
 
@@ -145,7 +67,6 @@ void GUI::mousePosCallback(double mouse_x, double mouse_y)
 	glm::uvec4 viewport = glm::uvec4(0, 0, window_width_, window_height_);
 
 	bool drag_camera = drag_state_ && current_button_ == GLFW_MOUSE_BUTTON_RIGHT;
-	bool drag_bone = drag_state_ && current_button_ == GLFW_MOUSE_BUTTON_LEFT;
 
 	if (drag_camera) {
 		glm::vec3 axis = glm::normalize(
@@ -157,26 +78,7 @@ void GUI::mousePosCallback(double mouse_x, double mouse_y)
 		tangent_ = glm::column(orientation_, 0);
 		up_ = glm::column(orientation_, 1);
 		look_ = glm::column(orientation_, 2);
-	} else if (drag_bone && mesh_->skeleton.highlightedBone != nullptr) {
-		glm::vec3 drag = glm::normalize(mouse_direction.y * up_ 
-			+ mouse_direction.x * tangent_);
-		glm::vec3 axis = glm::cross(drag, look_);
-		Bone* b = mesh_->skeleton.highlightedBone;
-		axis = glm::vec3(b->parent->localToBone(glm::vec4(axis, 0)));
-		b->rotation = glm::rotate(rotation_speed_, axis) * b->rotation;
-		pose_changed_ = true;
-		return ;
 	}
-
-	// FIXME: highlight bones that have been moused over
-	glm::vec4 near_point = glm::vec4(mouse_x / window_width_ * 2 - 1, 1 - mouse_y / window_height_ * 2, -1, 1);
-	near_point = glm::inverse(projection_matrix_) * near_point;
-	near_point.z = -1;
-	near_point.w = 0;
-	near_point = glm::inverse(view_matrix_) * near_point;
-	glm::vec3 ray = glm::vec3(near_point);
-
-	mesh_->skeleton.highlightBone(eye_, glm::normalize(ray));
 }
 
 void GUI::mouseButtonCallback(int button, int action, int mods)

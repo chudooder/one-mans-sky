@@ -14,14 +14,10 @@ struct MatrixPointers {
 	const float *projection, *model, *view;
 };
 
-bool IntersectCylinder(const glm::vec3& origin, const glm::vec3& direction,
-		float radius, float height, float* t);
-
 class GUI {
 public:
 	GUI(GLFWwindow*);
 	~GUI();
-	void assignMesh(Mesh*);
 
 	void keyCallback(int key, int scancode, int action, int mods);
 	void mousePosCallback(double mouse_x, double mouse_y);
@@ -35,20 +31,16 @@ public:
 
 	glm::vec3 getCenter() const { return center_; }
 	const glm::vec3& getCamera() const { return eye_; }
-	bool isPoseDirty() const { return pose_changed_; }
-	void clearPose() { pose_changed_ = false; }
 	const float* getLightPositionPtr() const { return &light_position_[0]; }
 	
 	bool isTransparent() const { return transparent_; }
 private:
 	GLFWwindow* window_;
-	Mesh* mesh_;
 
 	int window_width_, window_height_;
 
 	bool drag_state_ = false;
 	bool fps_mode_ = false;
-	bool pose_changed_ = true;
 	bool transparent_ = false;
 	int current_button_ = -1;
 	float roll_speed_ = 0.1;
@@ -56,7 +48,7 @@ private:
 	float camera_distance_ = 30.0;
 	float pan_speed_ = 0.1f;
 	float rotation_speed_ = 0.02f;
-	float zoom_speed_ = 0.1f;
+	float zoom_speed_ = 0.5f;
 	float aspect_;
 
 	glm::vec3 eye_ = glm::vec3(0.0f, 0.1f, camera_distance_);
