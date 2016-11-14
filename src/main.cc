@@ -80,13 +80,12 @@ int main(int argc, char* argv[])
 	create_floor(floor_vertices, floor_faces, floor_uv);
 
 	auto floor_img = std::make_shared<Image>();
-	int size = 8;	// 512
 
-	floor_img->width = pow(2, size);
-	floor_img->height = pow(2, size);
+	floor_img->width = pow(2, kFloorSize);
+	floor_img->height = pow(2, kFloorSize);
 	floor_img->stride = 3;
 
-	auto noise = perlin_noise(0, size, 4);
+	auto noise = perlin_noise(0, kFloorSize, kFloorDepth);
 	for(auto row : noise) {
 		for(float data : row) {
 			char val = (unsigned char) (255 * data);
@@ -105,7 +104,7 @@ int main(int argc, char* argv[])
 		shininess: 0.0f,
 		texture: floor_img,
 		offset: 0,
-		nfaces: 2
+		nfaces: floor_faces.size()
 	};
 
 	vector<Material> floor_mats;

@@ -11,15 +11,18 @@ const int kMaxBones = 128;
  * Extra credit: what would happen if you set kNear to 1e-5? How to solve it?
  */
 const float kNear = 0.1f;
-const float kFar = 1000.0f;
+const float kFar = 5000.0f;
 const float kFov = 45.0f;
 
 // Floor info.
 const float kFloorEps = 0.5 * (0.025 + 0.0175);
-const float kFloorXMin = -100.0f;
-const float kFloorXMax = 100.0f;
-const float kFloorZMin = -100.0f;
-const float kFloorZMax = 100.0f;
+const float kFloorXMin = -1000.0f;
+const float kFloorXMax = 1000.0f;
+const float kFloorZMin = -1000.0f;
+const float kFloorZMax = 1000.0f;
 const float kFloorY = -0.75617 - kFloorEps;
+
+const int kFloorSize = 8;
+const int kFloorDepth = 6;
 
 #endif
