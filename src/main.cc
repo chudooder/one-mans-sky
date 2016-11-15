@@ -85,9 +85,10 @@ int main(int argc, char* argv[])
 
 	// Create floor data
 	std::vector<glm::vec4> floor_vertices;
+	std::vector<glm::vec4> floor_normals;
 	std::vector<glm::uvec3> floor_faces;
 	std::vector<glm::vec2> floor_uv;
-	create_floor(floor_vertices, floor_faces, floor_uv);
+	create_floor(floor_vertices, floor_faces, floor_normals, floor_uv);
 
 	auto floor_img = std::make_shared<Image>();
 
@@ -128,7 +129,7 @@ int main(int argc, char* argv[])
 	std::vector<glm::vec2> water_uv;
 	create_water(water_vertices, water_faces, water_uv);
 
-	glm::vec4 light_position = glm::vec4(0.0f, 100.0f, 0.0f, 1.0f);
+	glm::vec4 light_position = glm::vec4(kFloorXMin, 500.0f, kFloorZMin, 1.0f);
 	MatrixPointers mats; // Define MatrixPointers here for lambda to capture
 	/*
 	 * In the following we are going to define several lambda functions to bind Uniforms.
@@ -185,7 +186,8 @@ int main(int argc, char* argv[])
 
 	RenderDataInput floor_pass_input;
 	floor_pass_input.assign(0, "vertex_position", floor_vertices.data(), floor_vertices.size(), 4, GL_FLOAT);
-	floor_pass_input.assign(1, "uv", floor_uv.data(), floor_uv.size(), 2, GL_FLOAT);
+	floor_pass_input.assign(1, "normal", floor_normals.data(), floor_normals.size(), 4, GL_FLOAT);
+	floor_pass_input.assign(2, "uv", floor_uv.data(), floor_uv.size(), 2, GL_FLOAT);
 	floor_pass_input.assign_index(floor_faces.data(), floor_faces.size(), 3);
 	floor_pass_input.useMaterials(floor_mats);
 	RenderPass floor_pass(-1,

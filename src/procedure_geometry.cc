@@ -4,6 +4,7 @@
 void create_floor(
 	std::vector<glm::vec4>& floor_vertices, 
 	std::vector<glm::uvec3>& floor_faces,
+	std::vector<glm::vec4>& floor_normals,
 	std::vector<glm::vec2>& floor_uv)
 {
 	int width = pow(2, kFloorSize);
@@ -12,6 +13,7 @@ void create_floor(
 	float sep = (kFloorXMax - kFloorXMin) / (float) width;
 	float uv_sep = 1.0 / (float) width;
 
+	// vertices
 	for(int i = 0; i < width; i++) {	// row
 		for(int j = 0; j < width; j++) {	// col
 			float val = terrain[i][j];
@@ -24,6 +26,44 @@ void create_floor(
 		}
 	}
 
+	// normals
+	for(int i = 0; i < width; i++) {	// row
+		for(int j = 0; j < width; j++) {	// col
+			if(i == 0 || i == width-1 || j == 0 || j == width-1) {
+				//TODO: some interpolation of these
+				floor_normals.push_back(glm::vec4(0.0, 1.0, 0.0, 1.0));
+				continue;
+			}
+			glm::vec3 p = glm::vec3(floor_vertices[i * width + j]);
+			glm::vec3 n0 = glm::normalize(glm::cross(
+				-p + glm::vec3(floor_vertices[(i - 1) * width + (j - 1)]),
+				-p + glm::vec3(floor_vertices[i * width + (j - 1)])));
+			glm::vec3 n1 = glm::normalize(glm::cross(
+				-p + glm::vec3(floor_vertices[(i - 1) * width + j]),
+				-p + glm::vec3(floor_vertices[(i - 1) * width + (j - 1)])));
+			glm::vec3 n2 = glm::normalize(glm::cross(
+				-p + glm::vec3(floor_vertices[i * width + (j + 1)]),
+				-p + glm::vec3(floor_vertices[(i - 1) * width + j])));
+			glm::vec3 n3 = glm::normalize(glm::cross(
+				-p + glm::vec3(floor_vertices[(i + 1) * width + (j + 1)]),
+				-p + glm::vec3(floor_vertices[i * width + (j + 1)])));
+			glm::vec3 n4 = glm::normalize(glm::cross(
+				-p + glm::vec3(floor_vertices[(i + 1) * width + j]),
+				-p + glm::vec3(floor_vertices[(i + 1) * width + (j + 1)])));
+			glm::vec3 n5 = glm::normalize(glm::cross(
+				-p + glm::vec3(floor_vertices[i * width + (j - 1)]),
+				-p + glm::vec3(floor_vertices[(i + 1) * width + j])));
+			if(n0.y < 0) std::cout << n0.y << std::endl;
+			if(n1.y < 0) std::cout << "lamoaoalam" << std::endl;
+			if(n2.y < 0) std::cout << "lamoaoalam" << std::endl;
+			if(n3.y < 0) std::cout << "lamoaoalam" << std::endl;
+			if(n4.y < 0) std::cout << "lamoaoalam" << std::endl;
+			if(n5.y < 0) std::cout << "lamoaoalam" << std::endl;
+			floor_normals.push_back(glm::vec4((n0 + n1 + n2 + n3 + n4 + n5) / 6.0f, 1.0f));
+		}
+	}
+
+	// faces
 	for(int i = 1; i < width; i++) {
 		for(int j = 1; j < width; j++) {
 			// draw face for square (i-1, j-1) -> (i, j)

@@ -13,6 +13,7 @@ using namespace std;
 void create_floor(
 	std::vector<glm::vec4>& floor_vertices, 
 	std::vector<glm::uvec3>& floor_faces,
+	std::vector<glm::vec4>& floor_normals,
 	std::vector<glm::vec2>& floor_uv);
 
 void create_water(
