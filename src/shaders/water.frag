@@ -12,7 +12,9 @@ float rand(vec2 co){
     return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
 }
 void main() {
-	float alpha = 1.0 - dot(normalize(camera_direction.xyz), normalize(face_normal.xyz));
+	float alpha = 1.0 - (0.9 * dot(normalize(camera_direction.xyz), vec3(0,1,0))
+		+ 0.1 * dot(normalize(camera_direction.xyz), normalize(vertex_normal.xyz)));
+
 	fragment_color = vec4(0.4, 0.4, 0.9, alpha);
 }
 )zzz"

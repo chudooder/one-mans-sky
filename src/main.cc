@@ -12,6 +12,7 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <chrono>
 
 #include <glm/gtx/component_wise.hpp>
 #include <glm/gtx/rotate_vector.hpp>
@@ -36,6 +37,10 @@ const char* fragment_shader =
 
 const char* floor_fragment_shader =
 #include "shaders/floor.frag"
+;
+
+const char* water_vertex_shader =
+#include "shaders/water.vert"
 ;
 
 const char* water_fragment_shader =
@@ -148,6 +153,9 @@ int main(int argc, char* argv[])
 	auto float_binder = [](int loc, const void* data) {
 		glUniform1fv(loc, 1, (const GLfloat*)data);
 	};
+	auto int_binder = [](int loc, const void* data) {
+		glUniform1iv(loc, 1, (const GLint*)data);
+	};
 	/*
 	 * These lambda functions below are used to retrieve data
 	 */
@@ -163,12 +171,17 @@ int main(int argc, char* argv[])
 	auto std_light_data = [&light_position]() -> const void* {
 		return &light_position[0];
 	};
+	int time_millis = 0;
+	auto time_data = [&time_millis]() -> const void* {
+		return &time_millis;
+	};
 
 	ShaderUniform std_view = { "view", matrix_binder, std_view_data };
 	ShaderUniform std_camera = { "camera_position", vector3_binder, std_camera_data };
 	ShaderUniform std_proj = { "projection", matrix_binder, std_proj_data };
 	ShaderUniform std_light = { "light_position", vector_binder, std_light_data };
 	ShaderUniform floor_model = { "model", matrix_binder, floor_model_data };
+	ShaderUniform std_time = { "time", int_binder, time_data };
 
 	RenderDataInput floor_pass_input;
 	floor_pass_input.assign(0, "vertex_position", floor_vertices.data(), floor_vertices.size(), 4, GL_FLOAT);
@@ -188,8 +201,8 @@ int main(int argc, char* argv[])
 	water_pass_input.assign_index(water_faces.data(), water_faces.size(), 3);
 	RenderPass water_pass(-1,
 			water_pass_input,
-			{ vertex_shader, geometry_shader, water_fragment_shader },
-			{ floor_model, std_view, std_proj, std_light, std_camera },
+			{ water_vertex_shader, geometry_shader, water_fragment_shader },
+			{ std_time, floor_model, std_view, std_proj, std_light, std_camera },
 			{ "fragment_color" }
 			);
 
@@ -214,7 +227,9 @@ int main(int argc, char* argv[])
 
 		gui.updateMatrices();
 		mats = gui.getMatrixPointers();
-
+		time_millis = std::chrono::duration_cast<std::chrono::milliseconds>(
+			std::chrono::system_clock::now().time_since_epoch()
+		).count() % 10000;
 		
 		// Then draw floor.
 		if (draw_floor) {
