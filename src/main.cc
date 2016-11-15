@@ -38,6 +38,10 @@ const char* floor_fragment_shader =
 #include "shaders/floor.frag"
 ;
 
+const char* water_fragment_shader =
+#include "shaders/water.frag"
+;
+
 // FIXME: Add more shaders here.
 
 void ErrorCallback(int error, const char* description) {
@@ -74,6 +78,7 @@ int main(int argc, char* argv[])
 	GLFWwindow *window = init_glefw();
 	GUI gui(window);
 
+	// Create floor data
 	std::vector<glm::vec4> floor_vertices;
 	std::vector<glm::uvec3> floor_faces;
 	std::vector<glm::vec2> floor_uv;
@@ -112,6 +117,12 @@ int main(int argc, char* argv[])
 
 	std::cout << "created floor" << std::endl;
 
+	// Create water data
+	std::vector<glm::vec4> water_vertices;
+	std::vector<glm::uvec3> water_faces;
+	std::vector<glm::vec2> water_uv;
+	create_water(water_vertices, water_faces, water_uv);
+
 	glm::vec4 light_position = glm::vec4(0.0f, 100.0f, 0.0f, 1.0f);
 	MatrixPointers mats; // Define MatrixPointers here for lambda to capture
 	/*
@@ -121,6 +132,10 @@ int main(int argc, char* argv[])
 	 *      http://en.cppreference.com/w/cpp/language/lambda
 	 *      http://www.stroustrup.com/C++11FAQ.html#lambda
 	 */
+	glm::mat4 floor_model_matrix = glm::mat4(1.0f);
+    	auto floor_model_data = [&floor_model_matrix]() -> const void* {
+    	return &floor_model_matrix[0][0];
+    }; // This return model matrix for the floor.
 	auto matrix_binder = [](int loc, const void* data) {
 		glUniformMatrix4fv(loc, 1, GL_FALSE, (const GLfloat*)data);
 	};
@@ -136,10 +151,6 @@ int main(int argc, char* argv[])
 	/*
 	 * These lambda functions below are used to retrieve data
 	 */
-	glm::mat4 floor_model_matrix = glm::mat4(1.0f);
-	auto floor_model_data = [&floor_model_matrix]() -> const void* {
-		return &floor_model_matrix[0][0];
-	}; // This return model matrix for the floor.
 	auto std_view_data = [&mats]() -> const void* {
 		return mats.view;
 	};
@@ -153,15 +164,11 @@ int main(int argc, char* argv[])
 		return &light_position[0];
 	};
 
-	// FIXME: add more lambdas for data_source if you want to use RenderPass.
-	//        Otherwise, do whatever you like here
-	ShaderUniform floor_model = { "model", matrix_binder, floor_model_data };
 	ShaderUniform std_view = { "view", matrix_binder, std_view_data };
 	ShaderUniform std_camera = { "camera_position", vector3_binder, std_camera_data };
 	ShaderUniform std_proj = { "projection", matrix_binder, std_proj_data };
 	ShaderUniform std_light = { "light_position", vector_binder, std_light_data };
-	// FIXME: define more ShaderUniforms for RenderPass if you want to use it.
-	//        Otherwise, do whatever you like here
+	ShaderUniform floor_model = { "model", matrix_binder, floor_model_data };
 
 	RenderDataInput floor_pass_input;
 	floor_pass_input.assign(0, "vertex_position", floor_vertices.data(), floor_vertices.size(), 4, GL_FLOAT);
@@ -174,9 +181,22 @@ int main(int argc, char* argv[])
 			{ floor_model, std_view, std_proj, std_light },
 			{ "fragment_color" }
 			);
+
+	RenderDataInput water_pass_input;
+	water_pass_input.assign(0, "vertex_position", water_vertices.data(), water_vertices.size(), 4, GL_FLOAT);
+	water_pass_input.assign(1, "uv", water_uv.data(), water_uv.size(), 2, GL_FLOAT);
+	water_pass_input.assign_index(water_faces.data(), water_faces.size(), 3);
+	RenderPass water_pass(-1,
+			water_pass_input,
+			{ vertex_shader, geometry_shader, water_fragment_shader },
+			{ floor_model, std_view, std_proj, std_light, std_camera },
+			{ "fragment_color" }
+			);
+
 	float aspect = 0.0f;
 
 	bool draw_floor = true;
+	bool draw_water = true;
 
 	while (!glfwWindowShouldClose(window)) {
 		// Setup some basic window stuff.
@@ -199,12 +219,14 @@ int main(int argc, char* argv[])
 		// Then draw floor.
 		if (draw_floor) {
 			floor_pass.setup();
-			// Draw our triangles.
-			// CHECK_GL_ERROR(glDrawElements(GL_TRIANGLES, floor_faces.size() * 3, GL_UNSIGNED_INT, 0));
-		
 			int mid = 0;
 			while (floor_pass.renderWithMaterial(mid))
 				mid++;
+		}
+
+		if (draw_water) {
+			water_pass.setup();
+			CHECK_GL_ERROR(glDrawElements(GL_TRIANGLES, water_faces.size() * 3, GL_UNSIGNED_INT, 0));
 		}
 		
 		// Poll and swap.
