@@ -96,7 +96,7 @@ int main(int argc, char* argv[])
 	floor_img->height = pow(2, kFloorSize);
 	floor_img->stride = 3;
 
-	auto noise = perlin_noise(0, kFloorSize, kFloorDepth);
+	auto noise = perlin_noise(kFloorSeed, kFloorSize, kFloorDepth);
 	for(auto row : noise) {
 		for(float data : row) {
 			char val = (unsigned char) (255 * data);
@@ -192,7 +192,7 @@ int main(int argc, char* argv[])
 	floor_pass_input.useMaterials(floor_mats);
 	RenderPass floor_pass(-1,
 			floor_pass_input,
-			{ vertex_shader, geometry_shader, fragment_shader},
+			{ vertex_shader, geometry_shader, floor_fragment_shader},
 			{ floor_model, std_view, std_proj, std_light },
 			{ "fragment_color" }
 			);

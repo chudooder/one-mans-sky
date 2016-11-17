@@ -1,6 +1,38 @@
 #include "procedure_geometry.h"
 #include "config.h"
 
+glm::vec4 compute_vertex_normal(
+	const int i, 
+	const int j, 
+	const int width, 
+	const std::vector<glm::vec4>& floor_vertices)
+{
+	glm::vec3 p = glm::vec3(floor_vertices[i * width + j]);
+	glm::vec3 n0 = glm::normalize(glm::cross(
+		-p + glm::vec3(floor_vertices[(i - 1) * width + (j - 1)]),
+		-p + glm::vec3(floor_vertices[i * width + (j - 1)])));
+	glm::vec3 n1 = glm::normalize(glm::cross(
+		-p + glm::vec3(floor_vertices[(i - 1) * width + j]),
+		-p + glm::vec3(floor_vertices[(i - 1) * width + (j - 1)])));
+	glm::vec3 n2 = glm::normalize(glm::cross(
+		-p + glm::vec3(floor_vertices[i * width + (j + 1)]),
+		-p + glm::vec3(floor_vertices[(i - 1) * width + j])));
+	glm::vec3 n3 = glm::normalize(glm::cross(
+		-p + glm::vec3(floor_vertices[(i + 1) * width + (j + 1)]),
+		-p + glm::vec3(floor_vertices[i * width + (j + 1)])));
+	glm::vec3 n4 = glm::normalize(glm::cross(
+		-p + glm::vec3(floor_vertices[(i + 1) * width + j]),
+		-p + glm::vec3(floor_vertices[(i + 1) * width + (j + 1)])));
+	glm::vec3 n5 = glm::normalize(glm::cross(
+		-p + glm::vec3(floor_vertices[i * width + (j - 1)]),
+		-p + glm::vec3(floor_vertices[(i + 1) * width + j])));
+	return glm::vec4((n0 + n1 + n2 + n3 + n4 + n5) / 6.0f, 1.0f);
+}
+
+float noise_to_height(float val) {
+	return kFloorY + kFloorHeight * val * val * val;
+}
+
 void create_floor(
 	std::vector<glm::vec4>& floor_vertices, 
 	std::vector<glm::uvec3>& floor_faces,
@@ -8,7 +40,7 @@ void create_floor(
 	std::vector<glm::vec2>& floor_uv)
 {
 	int width = pow(2, kFloorSize);
-	auto terrain = perlin_noise(0, kFloorSize, kFloorDepth);
+	auto terrain = perlin_noise(kFloorSeed, kFloorSize, kFloorDepth);
 
 	float sep = (kFloorXMax - kFloorXMin) / (float) width;
 	float uv_sep = 1.0 / (float) width;
@@ -19,7 +51,7 @@ void create_floor(
 			float val = terrain[i][j];
 			floor_vertices.push_back(glm::vec4(
 				kFloorXMin + sep * j,
-				val * 100.0f - 30.0f,
+				noise_to_height(val),
 				kFloorZMin + sep * i,
 				1.0f));
 			floor_uv.push_back(glm::vec2(uv_sep * j, uv_sep * i));
@@ -34,32 +66,8 @@ void create_floor(
 				floor_normals.push_back(glm::vec4(0.0, 1.0, 0.0, 1.0));
 				continue;
 			}
-			glm::vec3 p = glm::vec3(floor_vertices[i * width + j]);
-			glm::vec3 n0 = glm::normalize(glm::cross(
-				-p + glm::vec3(floor_vertices[(i - 1) * width + (j - 1)]),
-				-p + glm::vec3(floor_vertices[i * width + (j - 1)])));
-			glm::vec3 n1 = glm::normalize(glm::cross(
-				-p + glm::vec3(floor_vertices[(i - 1) * width + j]),
-				-p + glm::vec3(floor_vertices[(i - 1) * width + (j - 1)])));
-			glm::vec3 n2 = glm::normalize(glm::cross(
-				-p + glm::vec3(floor_vertices[i * width + (j + 1)]),
-				-p + glm::vec3(floor_vertices[(i - 1) * width + j])));
-			glm::vec3 n3 = glm::normalize(glm::cross(
-				-p + glm::vec3(floor_vertices[(i + 1) * width + (j + 1)]),
-				-p + glm::vec3(floor_vertices[i * width + (j + 1)])));
-			glm::vec3 n4 = glm::normalize(glm::cross(
-				-p + glm::vec3(floor_vertices[(i + 1) * width + j]),
-				-p + glm::vec3(floor_vertices[(i + 1) * width + (j + 1)])));
-			glm::vec3 n5 = glm::normalize(glm::cross(
-				-p + glm::vec3(floor_vertices[i * width + (j - 1)]),
-				-p + glm::vec3(floor_vertices[(i + 1) * width + j])));
-			if(n0.y < 0) std::cout << n0.y << std::endl;
-			if(n1.y < 0) std::cout << "lamoaoalam" << std::endl;
-			if(n2.y < 0) std::cout << "lamoaoalam" << std::endl;
-			if(n3.y < 0) std::cout << "lamoaoalam" << std::endl;
-			if(n4.y < 0) std::cout << "lamoaoalam" << std::endl;
-			if(n5.y < 0) std::cout << "lamoaoalam" << std::endl;
-			floor_normals.push_back(glm::vec4((n0 + n1 + n2 + n3 + n4 + n5) / 6.0f, 1.0f));
+
+			floor_normals.push_back(compute_vertex_normal(i, j, width, floor_vertices));
 		}
 	}
 
@@ -78,17 +86,52 @@ void create_floor(
 		}
 	}
 
+	// erosion
 
-	// floor_vertices.push_back(glm::vec4(kFloorXMin, kFloorY, kFloorZMax, 1.0f));
-	// floor_vertices.push_back(glm::vec4(kFloorXMax, kFloorY, kFloorZMax, 1.0f));
-	// floor_vertices.push_back(glm::vec4(kFloorXMax, kFloorY, kFloorZMin, 1.0f));
-	// floor_vertices.push_back(glm::vec4(kFloorXMin, kFloorY, kFloorZMin, 1.0f));
-	// floor_uv.push_back(glm::vec2(0.0, 0.0));
-	// floor_uv.push_back(glm::vec2(0.0, 1.0));
-	// floor_uv.push_back(glm::vec2(1.0, 1.0));
-	// floor_uv.push_back(glm::vec2(1.0, 0.0));
-	// floor_faces.push_back(glm::uvec3(0, 1, 2));
-	// floor_faces.push_back(glm::uvec3(2, 3, 0));
+	/*
+	for(int t = 0; t < 5; t++) {
+		std::vector<glm::vec4> eroded = floor_vertices;
+		for(int i = 1; i < width - 1; i++) {
+			for(int j = 1; j < width - 1; j++) {
+				// check the normal at this point. If the angle from the y axis
+				// is more than 45 degrees, then shift the point down and
+				// recompute normals.
+
+				glm::vec4 normal = floor_normals[i * width + j];
+				float angle = std::acos(glm::dot(glm::vec3(normal), glm::vec3(0, 1, 0)));
+
+				if (angle > 0.6) {	// 0.785 = pi / 4
+					// erode to lowest point out of neighboring points
+					float minY = floor_vertices[i * width + j].y;
+					for(int r = i-1; r < i+2; r++) {
+						for(int c = j-1; c < j+2; c++) {
+							if(floor_vertices[r * width + c].y < minY) {
+								minY = floor_vertices[r * width + c].y;
+							}
+						}
+					}
+
+					eroded[i * width + j].y -= 0.8 * (floor_vertices[i * width + j].y - minY);
+				}
+			}
+		}
+		floor_vertices = eroded;
+
+		// recompute normals
+		for(int i = 0; i < width; i++) {	// row
+			for(int j = 0; j < width; j++) {	// col
+				if(i == 0 || i == width-1 || j == 0 || j == width-1) {
+					//TODO: some interpolation of these
+					floor_normals[i * width + j] = glm::vec4(0.0, 1.0, 0.0, 1.0);
+					continue;
+				}
+
+				floor_normals[i * width + j] = compute_vertex_normal(i, j, width, floor_vertices);
+			}
+		}
+	}
+	*/
+	
 }
 
 void create_water(
@@ -158,7 +201,7 @@ vector<vector<float>> perlin_noise(int seed, int size, int depth) {
 				d = noise[i2][j2];
 
 				upsampled[i][j] = clamp(0.0f, 1.0f, (9 * a + 3 * (b + c) + d) / 16.0f +
-					((float) rand() / RAND_MAX - 0.5f) * (float) pow(0.5f, cur_depth));
+					((float) rand() / RAND_MAX - 0.5f) * (float) pow(0.4f, cur_depth));
 			}
 		}
 

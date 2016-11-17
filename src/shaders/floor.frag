@@ -3,17 +3,37 @@ R"zzz(
 in vec4 face_normal;
 in vec4 vertex_normal;
 in vec4 light_direction;
+in vec4 camera_direction;
+in vec2 uv_coords;
 in vec4 world_position;
+uniform vec4 diffuse;
+uniform vec4 ambient;
+uniform vec4 specular;
+uniform float shininess;
+uniform float alpha;
+uniform sampler2D textureSampler;
 out vec4 fragment_color;
+
+float rand(vec2 co){
+    return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
+}
+
 void main() {
-	vec4 pos = world_position;
-	float check_width = 5.0;
-	float i = floor(pos.x / check_width);
-	float j  = floor(pos.z / check_width);
-	vec3 color = mod(i + j, 2) * vec3(1.0, 1.0, 1.0);
-	float dot_nl = dot(normalize(light_direction), normalize(face_normal));
+
+	vec3 snow = vec3(0.95, 0.95, 0.95);
+	vec3 grass = vec3(0.4, 0.9, 0.3);
+
+	// color ramp
+	float height = 200;
+	float floorY = -60;
+	float y = world_position.y - floorY;
+
+	vec3 color = grass * (height - y) / height
+		+ snow * y / height;
+
+	vec3 texcolor = texture(textureSampler, uv_coords).xyz;
+	float dot_nl = dot(normalize(light_direction), normalize(vertex_normal));
 	dot_nl = clamp(dot_nl, 0.0, 1.0);
-	color = clamp(dot_nl * color, 0.0, 1.0);
-	fragment_color = vec4(color, 1.0);
+	fragment_color = vec4(color * dot_nl, 1.0);
 }
 )zzz"
