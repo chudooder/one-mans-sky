@@ -43,6 +43,18 @@ const char* floor_fragment_shader =
 #include "shaders/floor.frag"
 ;
 
+const char* skybox_vertex_shader = 
+#include "shaders/skybox.vert"
+;
+
+const char* skybox_geometry_shader = 
+#include "shaders/skybox.geom"
+;
+
+const char* skybox_fragment_shader =
+#include "shaders/skybox.frag"
+;
+
 const char* water_vertex_shader =
 #include "shaders/water.vert"
 ;
@@ -89,6 +101,16 @@ int main(int argc, char* argv[])
 	GUI gui(window, &aircraft);
 
 
+	// Get skybox geometry
+	std::vector<glm::vec4> skybox_vertices;
+	std::vector<glm::uvec3> skybox_faces;
+
+	create_skybox(skybox_vertices, skybox_faces, glm::vec3(0, 0, 0));
+	std::cout << "Created skybox vertices" << std::endl;
+
+	GLuint skybox_tex = create_skybox_tex();
+	std::cout << "Created skybox texture" << std::endl;
+
 	// Create floor data
 	std::vector<glm::vec4> floor_vertices;
 	std::vector<glm::vec4> floor_normals;
@@ -127,7 +149,7 @@ int main(int argc, char* argv[])
 	vector<Material> floor_mats;
 	floor_mats.push_back(floor_mat);
 
-	std::cout << "created floor" << std::endl;
+	std::cout << "Created floor" << std::endl;
 
 	// Create water data
 	std::vector<glm::vec4> water_vertices;
@@ -135,7 +157,7 @@ int main(int argc, char* argv[])
 	std::vector<glm::vec2> water_uv;
 	create_water(water_vertices, water_faces, water_uv);
 
-	glm::vec4 light_position = glm::vec4(kFloorXMin, 500.0f, kFloorZMin, 1.0f);
+	glm::vec4 light_position = glm::vec4(kFloorXMax, 5000.0f, kFloorZMax, 1.0f);
 	MatrixPointers mats; // Define MatrixPointers here for lambda to capture
 	/*
 	 * In the following we are going to define several lambda functions to bind Uniforms.
@@ -148,6 +170,10 @@ int main(int argc, char* argv[])
     	auto floor_model_data = [&floor_model_matrix]() -> const void* {
     	return &floor_model_matrix[0][0];
     }; // This return model matrix for the floor.
+    glm::mat4 skybox_model_matrix = glm::mat4(1.0f);
+    	auto skybox_model_data = [&skybox_model_matrix]() -> const void* {
+    	return &skybox_model_matrix[0][0];
+    };
 	auto matrix_binder = [](int loc, const void* data) {
 		glUniformMatrix4fv(loc, 1, GL_FALSE, (const GLfloat*)data);
 	};
@@ -188,6 +214,7 @@ int main(int argc, char* argv[])
 	ShaderUniform std_proj = { "projection", matrix_binder, std_proj_data };
 	ShaderUniform std_light = { "light_position", vector_binder, std_light_data };
 	ShaderUniform floor_model = { "model", matrix_binder, floor_model_data };
+	ShaderUniform skybox_model = { "model", matrix_binder, std_camera_data };
 	ShaderUniform std_time = { "time", int_binder, time_data };
 
 	RenderDataInput floor_pass_input;
@@ -214,10 +241,21 @@ int main(int argc, char* argv[])
 			{ "fragment_color" }
 			);
 
+	RenderDataInput skybox_pass_input;
+	skybox_pass_input.assign(0, "vertex_position", skybox_vertices.data(), skybox_vertices.size(), 4, GL_FLOAT);
+	skybox_pass_input.assign_index(skybox_faces.data(), skybox_faces.size(), 3);
+	RenderPass skybox_pass(-1,
+			skybox_pass_input,
+			{ skybox_vertex_shader, skybox_geometry_shader, skybox_fragment_shader },
+			{ std_view, std_proj, std_light },
+			{ "fragment_color" }
+			);
+
 	float aspect = 0.0f;
 
 	bool draw_floor = true;
 	bool draw_water = true;
+	bool draw_skybox = true;
 
 	auto curTime = std::chrono::system_clock::now();
 	auto lastTime = curTime;
@@ -242,6 +280,14 @@ int main(int argc, char* argv[])
 		time_millis = std::chrono::duration_cast<std::chrono::milliseconds>(
 			std::chrono::system_clock::now().time_since_epoch()
 		).count() % 10000;
+
+		if (draw_skybox) {
+			CHECK_GL_ERROR(glDepthMask(GL_FALSE));
+			skybox_pass.setup();
+			CHECK_GL_ERROR(glBindTexture(GL_TEXTURE_CUBE_MAP, skybox_tex));
+			CHECK_GL_ERROR(glDrawElements(GL_TRIANGLES, skybox_faces.size() * 3, GL_UNSIGNED_INT, 0));
+			CHECK_GL_ERROR(glDepthMask(GL_TRUE));
+		}
 		
 		// Then draw floor.
 		if (draw_floor) {

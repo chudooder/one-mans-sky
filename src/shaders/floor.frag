@@ -24,8 +24,8 @@ void main() {
 	vec3 grass = vec3(0.4, 0.9, 0.3);
 
 	// color ramp
-	float height = 200;
-	float floorY = -60;
+	float height = 500;
+	float floorY = -100;
 	float y = world_position.y - floorY;
 
 	vec3 color = grass * (height - y) / height
