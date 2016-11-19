@@ -4,6 +4,9 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <GLFW/glfw3.h>
+#include "aircraft.h"
+
+class Aircraft;
 
 class Mesh;
 
@@ -16,7 +19,7 @@ struct MatrixPointers {
 
 class GUI {
 public:
-	GUI(GLFWwindow*);
+	GUI(GLFWwindow*, Aircraft*);
 	~GUI();
 
 	void keyCallback(int key, int scancode, int action, int mods);
@@ -36,6 +39,7 @@ public:
 	bool isTransparent() const { return transparent_; }
 private:
 	GLFWwindow* window_;
+	Aircraft* aircraft;
 
 	int window_width_, window_height_;
 

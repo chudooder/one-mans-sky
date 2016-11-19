@@ -5,6 +5,7 @@
 #include "render_pass.h"
 #include "config.h"
 #include "gui.h"
+#include "aircraft.h"
 
 #include <algorithm>
 #include <fstream>
@@ -19,6 +20,9 @@
 #include <glm/gtx/string_cast.hpp>
 #include <glm/gtx/io.hpp>
 #include <debuggl.h>
+
+#include <ctime>
+#include <thread>
 
 int window_width = 800, window_height = 600;
 const std::string window_title = "One Man's Sky";
@@ -81,7 +85,9 @@ GLFWwindow* init_glefw()
 int main(int argc, char* argv[])
 {
 	GLFWwindow *window = init_glefw();
-	GUI gui(window);
+	Aircraft aircraft(window);
+	GUI gui(window, &aircraft);
+
 
 	// Create floor data
 	std::vector<glm::vec4> floor_vertices;
@@ -213,6 +219,9 @@ int main(int argc, char* argv[])
 	bool draw_floor = true;
 	bool draw_water = true;
 
+	auto curTime = std::chrono::system_clock::now();
+	auto lastTime = curTime;
+
 	while (!glfwWindowShouldClose(window)) {
 		// Setup some basic window stuff.
 		glfwGetFramebufferSize(window, &window_width, &window_height);
@@ -227,8 +236,9 @@ int main(int argc, char* argv[])
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		glCullFace(GL_BACK);
 
-		gui.updateMatrices();
-		mats = gui.getMatrixPointers();
+        std::chrono::duration<double> diff = curTime-lastTime;
+		aircraft.physicsStep(diff.count());
+		mats = aircraft.getMatrixPointers();
 		time_millis = std::chrono::duration_cast<std::chrono::milliseconds>(
 			std::chrono::system_clock::now().time_since_epoch()
 		).count() % 10000;
@@ -249,6 +259,13 @@ int main(int argc, char* argv[])
 		// Poll and swap.
 		glfwPollEvents();
 		glfwSwapBuffers(window);
+
+		// std::chrono::milliseconds timespan(1);
+		// std::this_thread::sleep_for(timespan);
+
+		lastTime = curTime;
+		curTime = std::chrono::system_clock::now();
+
 	}
 	glfwDestroyWindow(window);
 	glfwTerminate();
