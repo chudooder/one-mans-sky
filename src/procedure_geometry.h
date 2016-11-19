@@ -1,6 +1,8 @@
 #ifndef PROCEDURE_GEOMETRY_H
 #define PROCEDURE_GEOMETRY_H
 
+#include <GL/glew.h>
+
 #include <vector>
 #include <glm/glm.hpp>
 #include <iostream>
@@ -21,6 +23,13 @@ void create_water(
 	std::vector<glm::vec4>& water_vertices, 
 	std::vector<glm::uvec3>& water_faces,
 	std::vector<glm::vec2>& water_uv);
+
+void create_skybox(
+	std::vector<glm::vec4>& sky_vertices, 
+	std::vector<glm::uvec3>& sky_faces,
+	const glm::vec3 center);
+
+int create_skybox_tex();
 
 vector<vector<float>> perlin_noise(int seed, int size, int depth);
 

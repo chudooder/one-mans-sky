@@ -29,4 +29,7 @@ const int kFloorSize = 9;	// 1024x1024
 const int kFloorDepth = 7;
 const int kFloorSeed = std::rand();
 
+const float kSkySize = 2.0f;
+
+
 #endif

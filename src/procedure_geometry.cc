@@ -1,5 +1,9 @@
 #include "procedure_geometry.h"
 #include "config.h"
+#include <bitmap.h>
+#include <image.h>
+#include "jpegio.h"
+#include <debuggl.h>
 
 glm::vec4 compute_vertex_normal(
 	const int i, 
@@ -31,6 +35,11 @@ glm::vec4 compute_vertex_normal(
 
 float noise_to_height(float val) {
 	return kFloorY + kFloorHeight * val * val * val;
+}
+
+template <typename T>
+T clamp(T low, T high, T val) {
+	return min(high, max(low, val));
 }
 
 void create_floor(
@@ -168,10 +177,36 @@ void create_water(
 	}
 }
 
-template <typename T>
-T clamp(T low, T high, T val) {
-	return min(high, max(low, val));
+void create_skybox(
+	std::vector<glm::vec4>& sky_vertices, 
+	std::vector<glm::uvec3>& sky_faces,
+	const glm::vec3 center)
+{
+	glm::vec4 c = glm::vec4(center, 1.0);
+	sky_vertices.push_back(c + glm::vec4(-kSkySize / 2, -kSkySize / 2, -kSkySize / 2, 0.0));
+	sky_vertices.push_back(c + glm::vec4(-kSkySize / 2, -kSkySize / 2, kSkySize / 2, 0.0));
+	sky_vertices.push_back(c + glm::vec4(-kSkySize / 2, kSkySize / 2, -kSkySize / 2, 0.0));
+	sky_vertices.push_back(c + glm::vec4(-kSkySize / 2, kSkySize / 2, kSkySize / 2, 0.0));
+	sky_vertices.push_back(c + glm::vec4(kSkySize / 2, -kSkySize / 2, -kSkySize / 2, 0.0));
+	sky_vertices.push_back(c + glm::vec4(kSkySize / 2, -kSkySize / 2, kSkySize / 2, 0.0));
+	sky_vertices.push_back(c + glm::vec4(kSkySize / 2, kSkySize / 2, -kSkySize / 2, 0.0));
+	sky_vertices.push_back(c + glm::vec4(kSkySize / 2, kSkySize / 2, kSkySize / 2, 0.0));
+
+	sky_faces.push_back(glm::uvec3(1, 0, 3));
+	sky_faces.push_back(glm::uvec3(2, 3, 0));
+	sky_faces.push_back(glm::uvec3(7, 4, 5));
+	sky_faces.push_back(glm::uvec3(6, 4, 7));
+	sky_faces.push_back(glm::uvec3(6, 7, 2));
+	sky_faces.push_back(glm::uvec3(2, 7, 3));
+	sky_faces.push_back(glm::uvec3(0, 5, 4));
+	sky_faces.push_back(glm::uvec3(1, 5, 0));
+	sky_faces.push_back(glm::uvec3(7, 5, 3));
+	sky_faces.push_back(glm::uvec3(3, 5, 1));
+	sky_faces.push_back(glm::uvec3(0, 4, 2));
+	sky_faces.push_back(glm::uvec3(2, 4, 6));
 }
+
+
 
 vector<vector<float>> perlin_noise(int seed, int size, int depth) {
 
@@ -209,4 +244,43 @@ vector<vector<float>> perlin_noise(int seed, int size, int depth) {
 	}
 
 	return noise;
+}
+
+int create_skybox_tex() {
+	// Load skybox image
+	std::vector<Image> images(6);
+	LoadJPEG("assets/lake1_rt.JPG", &images[0]);
+	LoadJPEG("assets/lake1_lf.JPG", &images[1]);
+	LoadJPEG("assets/lake1_up.JPG", &images[2]);
+	LoadJPEG("assets/lake1_dn.JPG", &images[3]);
+	LoadJPEG("assets/lake1_bk.JPG", &images[4]);
+	LoadJPEG("assets/lake1_ft.JPG", &images[5]);
+
+	// Bind skybox textures
+	GLuint skybox_tex;
+	glGenTextures(1, &skybox_tex);
+	glActiveTexture(GL_TEXTURE0);
+
+
+	std::cout << "Ready to bind textures" << std::endl;
+
+	glBindTexture(GL_TEXTURE_CUBE_MAP, skybox_tex);
+	for(int i = 0; i < 6; i++) {
+		Image& img = images[i];
+		CHECK_GL_ERROR(glTexImage2D(
+			GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0,
+			GL_RGB, img.width, img.height, 0, GL_RGB, GL_UNSIGNED_BYTE, img.bytes.data()
+		));
+	}
+
+	std::cout << "Bound textures" << std::endl;
+
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+
+	return skybox_tex;
 }
