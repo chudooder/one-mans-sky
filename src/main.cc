@@ -6,6 +6,7 @@
 #include "config.h"
 #include "gui.h"
 #include "aircraft.h"
+#include "hud.h"
 
 #include <algorithm>
 #include <fstream>
@@ -99,6 +100,7 @@ int main(int argc, char* argv[])
 	GLFWwindow *window = init_glefw();
 	Aircraft aircraft(window);
 	GUI gui(window, &aircraft);
+	Altimeter altimeter(&aircraft);
 
 
 	// Get skybox geometry
@@ -301,6 +303,8 @@ int main(int argc, char* argv[])
 			water_pass.setup();
 			CHECK_GL_ERROR(glDrawElements(GL_TRIANGLES, water_faces.size() * 3, GL_UNSIGNED_INT, 0));
 		}
+
+		altimeter.render();
 		
 		// Poll and swap.
 		glfwPollEvents();

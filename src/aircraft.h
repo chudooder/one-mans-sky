@@ -10,7 +10,7 @@
 #define GRAVITY 9.81f
 #define THRUST 20000.0f
 #define MASS 5470.0f
-#define BASE_DRAG 0.1f;
+#define BASE_DRAG 0.1f
 #define BASE_LIFT 0.33f
 #define WING_AREA 21.739f
 #define WING_EFF 0.78f
@@ -27,10 +27,6 @@ class MatrixPointers;
 
 
 class Aircraft {
-	glm::vec3 position = glm::vec3(0.0f, 50.0f, 0.0f);
-	glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
-	glm::vec3 look = glm::vec3(0.0f, 0.0f, 1.0f);
-
 	glm::vec3 airspeed = glm::vec3(0.0f, 0.0f, 100.0f);
 	float throttle = 1.0f;
 
@@ -46,6 +42,10 @@ class Aircraft {
 	glm::mat4 view;
 
 public:
+	glm::vec3 position = glm::vec3(0.0f, 50.0f, 0.0f);
+	glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
+	glm::vec3 look = glm::vec3(0.0f, 0.0f, 1.0f);
+
 	Aircraft(GLFWwindow* window);
 
 	bool input(int key, int action);
