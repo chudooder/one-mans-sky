@@ -27,9 +27,6 @@ class MatrixPointers;
 
 
 class Aircraft {
-	glm::vec3 position = glm::vec3(0.0f, 50.0f, 0.0f);
-	glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
-	glm::vec3 look = glm::vec3(0.0f, 0.0f, 1.0f);
 
 	glm::vec3 airspeed = glm::vec3(0.0f, 0.0f, 100.0f);
 	float throttle = 1.0f;
@@ -46,6 +43,11 @@ class Aircraft {
 	glm::mat4 view;
 
 public:
+
+	glm::vec3 position = glm::vec3(0.0f, 50.0f, 0.0f);
+	glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
+	glm::vec3 look = glm::vec3(0.0f, 0.0f, 1.0f);
+
 	Aircraft(GLFWwindow* window);
 
 	bool input(int key, int action);

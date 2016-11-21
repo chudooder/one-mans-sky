@@ -75,17 +75,17 @@ void Aircraft::physicsStep(float time){
 	}
 
 	// Debug
-	std::cout << "--- BEGIN TELEMETRY ---" << std::endl;
-	std::cout << "Altitude: " << altitude << std::endl;
-	std::cout << "Air Density: " << air_density << std::endl; 
-	std::cout << "Angle of Attack: " << aoa << std::endl; 
-	std::cout << "Lift Coef: " << lift_c << std::endl; 
-	std::cout << "Drag Coef: " << drag_c << std::endl; 
-	std::cout << "Weight: " << weight[0] << " " << weight[1] << " " << weight[2] << std::endl; 
-	std::cout << "Thrust: " << thrust[0] << " " << thrust[1] << " " << thrust[2] << std::endl; 
-	std::cout << "Drag: " << drag[0] << " " << drag[1] << " " << drag[2] << std::endl; 
-	std::cout << "Lift: " << lift[0] << " " << lift[1] << " " << lift[2] << std::endl; 
-	std::cout << "Airspeed: " << airspeed[0] << " " << airspeed[1] << " " << airspeed[2] << std::endl; 
+	// std::cout << "--- BEGIN TELEMETRY ---" << std::endl;
+	// std::cout << "Altitude: " << altitude << std::endl;
+	// std::cout << "Air Density: " << air_density << std::endl; 
+	// std::cout << "Angle of Attack: " << aoa << std::endl; 
+	// std::cout << "Lift Coef: " << lift_c << std::endl; 
+	// std::cout << "Drag Coef: " << drag_c << std::endl; 
+	// std::cout << "Weight: " << weight[0] << " " << weight[1] << " " << weight[2] << std::endl; 
+	// std::cout << "Thrust: " << thrust[0] << " " << thrust[1] << " " << thrust[2] << std::endl; 
+	// std::cout << "Drag: " << drag[0] << " " << drag[1] << " " << drag[2] << std::endl; 
+	// std::cout << "Lift: " << lift[0] << " " << lift[1] << " " << lift[2] << std::endl; 
+	// std::cout << "Airspeed: " << airspeed[0] << " " << airspeed[1] << " " << airspeed[2] << std::endl; 
 	
 
 	// Controls

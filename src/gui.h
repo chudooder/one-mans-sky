@@ -33,6 +33,7 @@ public:
 	static void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
 
 	glm::vec3 getCenter() const { return center_; }
+	const glm::mat4& getView() const { return view_matrix_; }
 	const glm::vec3& getCamera() const { return eye_; }
 	const float* getLightPositionPtr() const { return &light_position_[0]; }
 	
