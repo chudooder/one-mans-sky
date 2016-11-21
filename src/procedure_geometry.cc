@@ -43,15 +43,16 @@ T clamp(T low, T high, T val) {
 }
 
 void create_floor(
+	glm::vec4 position,
 	std::vector<glm::vec4>& floor_vertices, 
 	std::vector<glm::uvec3>& floor_faces,
 	std::vector<glm::vec4>& floor_normals,
 	std::vector<glm::vec2>& floor_uv)
 {
 	int width = pow(2, kFloorSize);
-	auto terrain = perlin_noise(kFloorSeed, kFloorSize, kFloorDepth);
+	auto terrain = perlin_noise((int) position.x * 193939 + (int) position.z, kFloorSize, kFloorDepth);
 
-	float sep = (kFloorXMax - kFloorXMin) / (float) width;
+	float sep = (kFloorWidth) / (float) width;
 	float uv_sep = 1.0 / (float) width;
 
 	// vertices
@@ -59,9 +60,9 @@ void create_floor(
 		for(int j = 0; j < width; j++) {	// col
 			float val = terrain[i][j];
 			floor_vertices.push_back(glm::vec4(
-				kFloorXMin + sep * j,
+				position.x + sep * j,
 				noise_to_height(val),
-				kFloorZMin + sep * i,
+				position.z + sep * i,
 				1.0f));
 			floor_uv.push_back(glm::vec2(uv_sep * j, uv_sep * i));
 		}

@@ -4,6 +4,7 @@
 #include "procedure_geometry.h"
 #include "render_pass.h"
 #include "config.h"
+#include "chunk.h"
 #include "gui.h"
 
 #include <algorithm>
@@ -105,43 +106,56 @@ int main(int argc, char* argv[])
 	GLuint skybox_tex = create_skybox_tex();
 	std::cout << "Created skybox texture" << std::endl;
 
+	std::vector<Chunk> chunks;
+
 	// Create floor data
-	std::vector<glm::vec4> floor_vertices;
-	std::vector<glm::vec4> floor_normals;
-	std::vector<glm::uvec3> floor_faces;
-	std::vector<glm::vec2> floor_uv;
-	create_floor(floor_vertices, floor_faces, floor_normals, floor_uv);
-
-	auto floor_img = std::make_shared<Image>();
-
-	floor_img->width = pow(2, kFloorSize);
-	floor_img->height = pow(2, kFloorSize);
-	floor_img->stride = 3;
-
-	auto noise = perlin_noise(kFloorSeed, kFloorSize, kFloorDepth);
-	for(auto row : noise) {
-		for(float data : row) {
-			char val = (unsigned char) (255 * data);
-			// std::cout << (int) val << " ";
-			floor_img->bytes.push_back(val);
-			floor_img->bytes.push_back(val);
-			floor_img->bytes.push_back(val);
+	for(int i=0; i<3; i++) {
+		for(int j=0; j<3; j++) {
+			chunks.push_back(Chunk(-1024.0f + kFloorWidth * i, -1024.0f + kFloorWidth * j));
 		}
-		// std::cout << endl;
 	}
 
-	Material floor_mat = {
-		diffuse: glm::vec4(1.0, 1.0, 1.0, 1.0),
-		ambient: glm::vec4(),
-		specular: glm::vec4(),
-		shininess: 0.0f,
-		texture: floor_img,
-		offset: 0,
-		nfaces: floor_faces.size()
-	};
+	std::vector<glm::vec4> floor_verts;
+	std::vector<glm::uvec3> floor_faces;
+	std::vector<glm::vec4> floor_normals;
+	std::vector<glm::vec2> floor_uv;
 
-	vector<Material> floor_mats;
-	floor_mats.push_back(floor_mat);
+	for(int i=0; i<chunks.size(); i++) {
+		Chunk& c = chunks[i];
+		int offset = floor_verts.size();
+		floor_verts.insert(floor_verts.end(), c.geom_verts.begin(), c.geom_verts.end());
+		// manually do the insert for faces cause indices
+		auto gf = c.geom_faces.begin();
+		std::cout << offset << std::endl;
+		while(gf != c.geom_faces.end()) {
+			glm::uvec3 face = *gf;
+			face.x += offset;
+			face.y += offset;
+			face.z += offset;
+			floor_faces.push_back(face);
+			++gf;
+		}
+
+		// insert extra faces to connect to the previous chunk
+		int floorWidth = pow(2, kFloorSize);
+		if(i > 2) {
+			int l_offset = (i - 3) * floorWidth * floorWidth;
+			std::cout << "interp " << i << " " << l_offset << std::endl;
+			// faces bordering tile to the negative x
+			for(int z = 0; z < floorWidth - 1; z++) {
+				int a = l_offset + floorWidth * z + (floorWidth - 1);
+				int b = l_offset + floorWidth * (z + 1) + (floorWidth - 1);
+				int c = offset + floorWidth * z;
+				int d = offset + floorWidth * (z + 1);
+
+				floor_faces.push_back(glm::uvec3(a, b, c));
+				floor_faces.push_back(glm::uvec3(b, d, c));
+			}
+		}
+
+		floor_normals.insert(floor_normals.end(), c.geom_normals.begin(), c.geom_normals.end());
+		floor_uv.insert(floor_uv.end(), c.geom_uv.begin(), c.geom_uv.end());
+	}
 
 	std::cout << "Created floor" << std::endl;
 
@@ -212,11 +226,10 @@ int main(int argc, char* argv[])
 	ShaderUniform std_time = { "time", int_binder, time_data };
 
 	RenderDataInput floor_pass_input;
-	floor_pass_input.assign(0, "vertex_position", floor_vertices.data(), floor_vertices.size(), 4, GL_FLOAT);
+	floor_pass_input.assign(0, "vertex_position", floor_verts.data(), floor_verts.size(), 4, GL_FLOAT);
 	floor_pass_input.assign(1, "normal", floor_normals.data(), floor_normals.size(), 4, GL_FLOAT);
 	floor_pass_input.assign(2, "uv", floor_uv.data(), floor_uv.size(), 2, GL_FLOAT);
 	floor_pass_input.assign_index(floor_faces.data(), floor_faces.size(), 3);
-	floor_pass_input.useMaterials(floor_mats);
 	RenderPass floor_pass(-1,
 			floor_pass_input,
 			{ vertex_shader, geometry_shader, floor_fragment_shader},
@@ -282,9 +295,7 @@ int main(int argc, char* argv[])
 		// Then draw floor.
 		if (draw_floor) {
 			floor_pass.setup();
-			int mid = 0;
-			while (floor_pass.renderWithMaterial(mid))
-				mid++;
+			CHECK_GL_ERROR(glDrawElements(GL_TRIANGLES, floor_faces.size() * 3, GL_UNSIGNED_INT, 0));
 		}
 
 		if (draw_water) {

@@ -18,15 +18,16 @@ const float kFov = 45.0f;
 
 // Floor info.
 const float kFloorEps = 0.5 * (0.025 + 0.0175);
-const float kFloorXMin = -2000.0f;
-const float kFloorXMax = 2000.0f;
-const float kFloorZMin = -2000.0f;
-const float kFloorZMax = 2000.0f;
+const float kFloorWidth = 2048.0f;
+const float kFloorXMin = -2048.0f;
+const float kFloorXMax = 2048.0f;
+const float kFloorZMin = -2048.0f;
+const float kFloorZMax = 2048.0f;
 const float kFloorY = -100.0f;
 const float kFloorHeight = 400.0f;
 
-const int kFloorSize = 9;	// 1024x1024
-const int kFloorDepth = 7;
+const int kFloorSize = 7;	// 1024x1024
+const int kFloorDepth = 6;
 const int kFloorSeed = std::rand();
 
 const float kSkySize = 2.0f;
