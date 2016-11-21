@@ -6,6 +6,7 @@
 #include "config.h"
 #include "chunk.h"
 #include "gui.h"
+#include "aircraft.h"
 
 #include <algorithm>
 #include <fstream>
@@ -20,6 +21,9 @@
 #include <glm/gtx/string_cast.hpp>
 #include <glm/gtx/io.hpp>
 #include <debuggl.h>
+
+#include <ctime>
+#include <thread>
 
 int window_width = 800, window_height = 600;
 const std::string window_title = "One Man's Sky";
@@ -38,6 +42,10 @@ const char* fragment_shader =
 
 const char* floor_fragment_shader =
 #include "shaders/floor.frag"
+;
+
+const char* floor_ref_fragment_shader =
+#include "shaders/floor_ref.frag"
 ;
 
 const char* skybox_vertex_shader = 
@@ -94,7 +102,9 @@ GLFWwindow* init_glefw()
 int main(int argc, char* argv[])
 {
 	GLFWwindow *window = init_glefw();
-	GUI gui(window);
+	Aircraft aircraft(window);
+	GUI gui(window, &aircraft);
+
 
 	// Get skybox geometry
 	std::vector<glm::vec4> skybox_vertices;
@@ -203,8 +213,12 @@ int main(int argc, char* argv[])
 	auto std_view_data = [&mats]() -> const void* {
 		return mats.view;
 	};
-	auto std_camera_data  = [&gui]() -> const void* {
-		return &gui.getCamera()[0];
+	glm::mat4 refl_view_mat;
+	auto refl_view_data = [&refl_view_mat]() -> const void* {
+		return &refl_view_mat[0][0];
+	};
+	auto std_camera_data  = [&aircraft]() -> const void* {
+		return &aircraft.position[0];
 	};
 	auto std_proj_data = [&mats]() -> const void* {
 		return mats.projection;
@@ -218,6 +232,7 @@ int main(int argc, char* argv[])
 	};
 
 	ShaderUniform std_view = { "view", matrix_binder, std_view_data };
+	ShaderUniform refl_view = { "view", matrix_binder, refl_view_data };
 	ShaderUniform std_camera = { "camera_position", vector3_binder, std_camera_data };
 	ShaderUniform std_proj = { "projection", matrix_binder, std_proj_data };
 	ShaderUniform std_light = { "light_position", vector_binder, std_light_data };
@@ -236,6 +251,43 @@ int main(int argc, char* argv[])
 			{ floor_model, std_view, std_proj, std_light },
 			{ "fragment_color" }
 			);
+
+	RenderDataInput reflection_pass_input;
+	reflection_pass_input.assign(0, "vertex_position", floor_vertices.data(), floor_vertices.size(), 4, GL_FLOAT);
+	reflection_pass_input.assign(1, "normal", floor_normals.data(), floor_normals.size(), 4, GL_FLOAT);
+	reflection_pass_input.assign(2, "uv", floor_uv.data(), floor_uv.size(), 2, GL_FLOAT);
+	reflection_pass_input.assign_index(floor_faces.data(), floor_faces.size(), 3);
+	reflection_pass_input.useMaterials(floor_mats);
+	RenderPass reflection_pass(-1,
+			reflection_pass_input,
+			{ vertex_shader, geometry_shader, floor_ref_fragment_shader},
+			{ floor_model, refl_view, std_proj, std_light },
+			{ "fragment_color" }
+			);
+
+	GLuint reflection_buffer = 0;
+	glGenFramebuffers(1, &reflection_buffer);
+	glBindFramebuffer(GL_FRAMEBUFFER, reflection_buffer);
+	GLuint reflection_texture;
+	glGenTextures(1, &reflection_texture);
+	glBindTexture(GL_TEXTURE_2D, reflection_texture);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, window_width, window_height, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+	GLuint depthrenderbuffer;
+	glGenRenderbuffers(1, &depthrenderbuffer);
+	glBindRenderbuffer(GL_RENDERBUFFER, depthrenderbuffer);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, window_width, window_height);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthrenderbuffer);
+
+	glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, reflection_texture, 0);
+	GLenum DrawBuffers[1] = {GL_COLOR_ATTACHMENT0};
+	glDrawBuffers(1, DrawBuffers);
+
+	if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		std::cout << "Reflection framebuffer setup went wrong!" << std::endl;
 
 	RenderDataInput water_pass_input;
 	water_pass_input.assign(0, "vertex_position", water_vertices.data(), water_vertices.size(), 4, GL_FLOAT);
@@ -264,6 +316,9 @@ int main(int argc, char* argv[])
 	bool draw_water = true;
 	bool draw_skybox = true;
 
+	auto curTime = std::chrono::system_clock::now();
+	auto lastTime = curTime;
+
 	while (!glfwWindowShouldClose(window)) {
 		// Setup some basic window stuff.
 		glfwGetFramebufferSize(window, &window_width, &window_height);
@@ -278,8 +333,21 @@ int main(int argc, char* argv[])
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 		glCullFace(GL_BACK);
 
-		gui.updateMatrices();
-		mats = gui.getMatrixPointers();
+        std::chrono::duration<double> diff = curTime-lastTime;
+		aircraft.physicsStep(diff.count());
+		mats = aircraft.getMatrixPointers();
+
+		glm::vec3 refl_pos = aircraft.position;
+		refl_pos[1] *= -1;
+
+		glm::vec3 refl_look = aircraft.look;
+		refl_look[1] *= -1;
+
+		glm::vec3 refl_up = aircraft.up;
+		refl_up[1] *= -1;
+
+		refl_view_mat = glm::lookAt(refl_pos, refl_pos + refl_look, refl_up);
+
 		time_millis = std::chrono::duration_cast<std::chrono::milliseconds>(
 			std::chrono::system_clock::now().time_since_epoch()
 		).count() % 10000;
@@ -298,14 +366,33 @@ int main(int argc, char* argv[])
 			CHECK_GL_ERROR(glDrawElements(GL_TRIANGLES, floor_faces.size() * 3, GL_UNSIGNED_INT, 0));
 		}
 
+		// Do a reflection render pass.
+		if (draw_water) {
+			glBindFramebuffer(GL_FRAMEBUFFER, reflection_buffer);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+			reflection_pass.setup();
+			int mid = 0;
+			while (floor_pass.renderWithMaterial(mid))
+				mid++;
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		}
+
 		if (draw_water) {
 			water_pass.setup();
+			CHECK_GL_ERROR(glBindTexture(GL_TEXTURE_2D, reflection_texture));
 			CHECK_GL_ERROR(glDrawElements(GL_TRIANGLES, water_faces.size() * 3, GL_UNSIGNED_INT, 0));
 		}
 		
 		// Poll and swap.
 		glfwPollEvents();
 		glfwSwapBuffers(window);
+
+		// std::chrono::milliseconds timespan(1);
+		// std::this_thread::sleep_for(timespan);
+
+		lastTime = curTime;
+		curTime = std::chrono::system_clock::now();
+
 	}
 	glfwDestroyWindow(window);
 	glfwTerminate();

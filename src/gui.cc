@@ -9,8 +9,8 @@
 
 #define RAY_EPSILON 0.0005f
 
-GUI::GUI(GLFWwindow* window)
-	:window_(window)
+GUI::GUI(GLFWwindow* window, Aircraft* craft)
+	:window_(window), aircraft(craft)
 {
 	glfwSetWindowUserPointer(window_, this);
 	glfwSetKeyCallback(window_, KeyCallback);
@@ -38,17 +38,7 @@ void GUI::keyCallback(int key, int scancode, int action, int mods)
 		SaveJPEG("screenshot.jpg", window_width_, window_height_, &pixels[0]);
 	}
 
-	if (captureWASDUPDOWN(key, action))
-		return ;
-	if (key == GLFW_KEY_LEFT || key == GLFW_KEY_RIGHT) {
-		float roll_speed;
-		if (key == GLFW_KEY_RIGHT)
-			roll_speed = -roll_speed_;
-		else
-			roll_speed = roll_speed_;
-	} else if (key == GLFW_KEY_C && action != GLFW_RELEASE) {
-		fps_mode_ = !fps_mode_;
-	}
+	aircraft->input(key, action);
 }
 
 void GUI::mousePosCallback(double mouse_x, double mouse_y)
