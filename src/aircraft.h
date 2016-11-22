@@ -23,7 +23,7 @@
 
 #define STABILITY 0.01f
 
-class MatrixPointers;
+struct MatrixPointers;
 
 
 class Aircraft {
