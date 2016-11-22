@@ -149,7 +149,7 @@ void create_water(
 	std::vector<glm::uvec3>& water_faces,
 	std::vector<glm::vec2>& water_uv)
 {
-	int width = pow(2, kFloorSize);
+	int width = pow(2, kFloorSize) / 4;
 	float sep = (kFloorXMax - kFloorXMin) / (float) width;
 	float uv_sep = 1.0 / (float) width;
 	for(int i = 0; i < width; i++) {	// row

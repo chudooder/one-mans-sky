@@ -253,11 +253,10 @@ int main(int argc, char* argv[])
 			);
 
 	RenderDataInput reflection_pass_input;
-	reflection_pass_input.assign(0, "vertex_position", floor_vertices.data(), floor_vertices.size(), 4, GL_FLOAT);
+	reflection_pass_input.assign(0, "vertex_position", floor_verts.data(), floor_verts.size(), 4, GL_FLOAT);
 	reflection_pass_input.assign(1, "normal", floor_normals.data(), floor_normals.size(), 4, GL_FLOAT);
 	reflection_pass_input.assign(2, "uv", floor_uv.data(), floor_uv.size(), 2, GL_FLOAT);
 	reflection_pass_input.assign_index(floor_faces.data(), floor_faces.size(), 3);
-	reflection_pass_input.useMaterials(floor_mats);
 	RenderPass reflection_pass(-1,
 			reflection_pass_input,
 			{ vertex_shader, geometry_shader, floor_ref_fragment_shader},
@@ -371,9 +370,7 @@ int main(int argc, char* argv[])
 			glBindFramebuffer(GL_FRAMEBUFFER, reflection_buffer);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 			reflection_pass.setup();
-			int mid = 0;
-			while (floor_pass.renderWithMaterial(mid))
-				mid++;
+			CHECK_GL_ERROR(glDrawElements(GL_TRIANGLES, floor_faces.size() * 3, GL_UNSIGNED_INT, 0));
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		}
 

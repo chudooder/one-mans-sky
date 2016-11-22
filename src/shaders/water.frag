@@ -21,6 +21,6 @@ void main() {
 	vec4 ambient = vec4(0.4, 0.4, 0.9, 0.3);
 
 	fragment_color = (1 - reflectance) * ambient + reflectance * reflColor;
-	// fragment_color = vec4(1.0, 1.0, 1.0, factor);
+	// fragment_color = reflColor;
 }
 )zzz"
