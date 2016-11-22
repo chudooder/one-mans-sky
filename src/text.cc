@@ -3,15 +3,13 @@
 #include <debuggl.h>
 #include "jpegio.h"
 
-#define FONT_ASPECT 0.7f;
-
 using namespace std;
 using namespace glm;
 
 
 bool Text::init = false;
 GLuint Text::fontTx;
-const vec4 Text::color = vec4(0.2f, 1.0f, 0.2f, 0.6f);
+const vec4 Text::color = vec4(0.0f, 1.0f, 0.0f, 0.6f);
 
 void Text::initFont(){
 	Image img;
@@ -31,12 +29,11 @@ void Text::getVBOs(
 	vec2 base, 
 	vector<vec2>& position, 
 	vector<vec2>& uv, 
-	vector<uvec3>& faces, 
-	bool reverse
+	vector<uvec3>& faces
 ){
-	float width = height * FONT_ASPECT;
+	float width = height * aspect;
 	float uvheight = 1.0f/16.0f;
-	float uvwidth = uvheight * FONT_ASPECT;
+	float uvwidth = uvheight * aspect;
 	if(reverse) {
 		base[0] -= text.length() * width;
 	}

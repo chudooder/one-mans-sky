@@ -23,10 +23,9 @@ class Altimeter {
 	std::vector<glm::vec2> c_position;
 	std::vector<glm::uvec3> c_faces;
 
-	//Matrix
-	glm::mat4 model;
+	glm::mat4 transform;
 
-
+	static glm::vec4 clip_area;
 public:
 	Altimeter(const Aircraft& a);
 	void render();

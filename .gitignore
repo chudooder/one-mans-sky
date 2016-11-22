@@ -28,7 +28,7 @@
 *.app
 
 # Screenshots
-*.jpg
+
 
 # Custom
 assets/pmd/*
