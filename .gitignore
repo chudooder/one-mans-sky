@@ -33,3 +33,4 @@
 # Custom
 assets/pmd/*
 build/
+third-party/
