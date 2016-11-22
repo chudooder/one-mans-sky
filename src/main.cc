@@ -100,7 +100,7 @@ int main(int argc, char* argv[])
 	GLFWwindow *window = init_glefw();
 	Aircraft aircraft(window);
 	GUI gui(window, &aircraft);
-	Altimeter altimeter(&aircraft);
+	Altimeter altimeter(aircraft);
 
 
 	// Get skybox geometry

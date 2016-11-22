@@ -1,105 +1,134 @@
 #include "hud.h"
 #include "jpegio.h"
+#include "text.h"
 #include <iostream>
-#include <debuggl.h>
 #include <string>
-
-const char* vert = "";
-const char* geom = "";
-const char* frag = "";
+#include <debuggl.h>
 
 using namespace glm;
 using namespace std;
 
-const char* altimeter_vert = 
-#include "shaders/altimeter.vert"
+// shaders
+const char* hud_vert = 
+#include "shaders/hud.vert"
 ;
 
-const char* hud_geom = 
-#include "shaders/hud.geom"
+const char* hud_tri_geom = 
+#include "shaders/hud_tri.geom"
+;
+
+const char* hud_line_geom = 
+#include "shaders/hud_line.geom"
 ;
 
 const char* text_frag = 
 #include "shaders/text.frag"
 ;
 
-GLuint font_tex;
-bool font_init = false;
-void init_font(){
-	Image img;
-	LoadJPEG("assets/samplefont.jpg", &img);
-	cout << img.width  << "x" << img.height << endl;
+const char* line_frag =
+#include "shaders/hud_line.frag"
+;
 
-	CHECK_GL_ERROR(glGenTextures(1, &font_tex));
-	std::cout << font_tex << std::endl;
-	CHECK_GL_ERROR(glActiveTexture(GL_TEXTURE0));
-	CHECK_GL_ERROR(glBindTexture(GL_TEXTURE_2D, font_tex));
-	CHECK_GL_ERROR(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, img.width, img.height, 0, GL_RGB, GL_FLOAT, img.bytes.data()));
-	font_init = true;
-	CHECK_GL_ERROR(glBindTexture(GL_TEXTURE_2D, 0));
-	std::cout << "Bound font" << std::endl;
-}
 
-GLuint get_font_tex(){
-	if(!font_init){
-		init_font();
-	}
-	return font_tex;
-}
+// uniforms
+auto matrix_binder = [](int loc, const void* data) {
+	glUniformMatrix4fv(loc, 1, GL_FALSE, (const GLfloat*)data);
+};
+auto vector_binder = [](int loc, const void* data) {
+	glUniform4fv(loc, 1, (const GLfloat*)data);
+};
+auto hud_color_data = []() -> const void* {
+	return &Text::color;
+};
+mat4 identity;
+auto identity_data = []() -> const void* {
+	return &identity;
+};
 
-void Text::getVBOs(vec2 base, vector<vec2>& position, vector<vec2>& uv, vector<uvec3>& faces){
-	for(unsigned i = 0; i < text.length(); i++){
-		int index = position.size();
-		position.push_back(base + vec2(i * size, 0));
-		position.push_back(base + vec2(i * size, size));
-		position.push_back(base + vec2(i * size + size, 0));
-		position.push_back(base + vec2(i * size + size, size));
-
-		char c = text[i];
-		float uv_x = (c % 16)/16.0f;
-		float uv_y = (c / 16)/14.0f;
-		uv.push_back(vec2(uv_x, 1.0f - uv_y));
-		uv.push_back(vec2(uv_x, 1.0f - (uv_y + 1.0f/14.0f)));
-		uv.push_back(vec2(uv_x + 1.0f/16.0f, 1.0f - uv_y));
-		uv.push_back(vec2(uv_x + 1.0f/16.0f, 1.0f - (uv_y + 1.0f/14.0f)));
-
-		faces.push_back(uvec3(index, index + 2, index + 1));
-		faces.push_back(uvec3(index + 3, index + 1, index + 2));
-	}
-}
-
-Altimeter::Altimeter(Aircraft* a): aircraft(a){
+Altimeter::Altimeter(const Aircraft& a) : aircraft(a) {
 	// Generate the text
-	// get_font_tex();
-	for (int i = -10000; i < 80000; i += 1000) {
-		Text t(to_string(i), 16);
-		t.getVBOs(vec2(0, i / 10 + 8), t_position, t_uv, t_faces);
+	for (int i = -10000; i < 80000; i += 100) {
+		string s = to_string(i);
+		Text t(s, 14);
+		t.getVBOs(vec2(765, 300 + i - 7), t_position, t_uv, t_faces, true);
 	}
 
-	auto float_binder = [](int loc, const void* data) {
-		glUniform1fv(loc, 1, (const GLfloat*)data);
-	};
-	auto altitude_data = [&a]() -> const void* {
-		return &a->position[1];
-	};
-	ShaderUniform position_uniform = {"altitude", float_binder, altitude_data};
+	// Generate the lines
+	for (int i = -10000; i < 80000; i += 10) {
+		int b = l_position.size();
+		if(i % 100 == 0){
+			l_position.push_back(vec2(770, 300 + i));
+		} else {
+			l_position.push_back(vec2(780, 300 + i));
+		}
+		l_position.push_back(vec2(788, 300 + i));
+		l_lines.push_back(uvec2(b, b + 1));
+	}
 
+	// Generate the caret
+	c_position.push_back(vec2(790, 300));
+	c_position.push_back(vec2(798, 304));
+	c_position.push_back(vec2(798, 296));
+	c_faces.push_back(uvec3(0, 2, 1));
+
+	// Uniforms
+	auto model_data = [this]() -> const void* {
+		return &model;
+	};
+	ShaderUniform model_uni = {"model", matrix_binder, model_data};
+	ShaderUniform frag_color_uni = {"frag_color", vector_binder, hud_color_data};
+	ShaderUniform caret_model_uni = {"model", matrix_binder, identity_data};
+
+	// VBOs
 	RenderDataInput text_input;
 	text_input.assign(0, "position", t_position.data(), t_position.size(), 2, GL_FLOAT);
 	text_input.assign(1, "uv", t_uv.data(), t_uv.size(), 2, GL_FLOAT);
 	text_input.assign_index(t_faces.data(), t_faces.size(), 3);
 
+	RenderDataInput lines_input;
+	lines_input.assign(0, "position", l_position.data(), l_position.size(), 2, GL_FLOAT);
+	lines_input.assign_index(l_lines.data(), l_lines.size(), 2);
+
+	RenderDataInput caret_input;
+	caret_input.assign(0, "position", c_position.data(), c_position.size(), 2, GL_FLOAT);
+	caret_input.assign_index(c_faces.data(), c_faces.size(), 3);
+
 	text_pass = new RenderPass(-1, text_input,
-		{ altimeter_vert, hud_geom, text_frag },
-		{ position_uniform },
+		{ hud_vert, hud_tri_geom, text_frag },
+		{ model_uni, frag_color_uni },
 		{ "fragment_color" }
 	);
+
+	line_pass = new RenderPass(-1, lines_input,
+		{ hud_vert, hud_line_geom, line_frag },
+		{ model_uni, frag_color_uni },
+		{ "fragment_color" }
+	);
+
+	caret_pass = new RenderPass(-1, caret_input,
+		{ hud_vert, hud_tri_geom, line_frag },
+		{ caret_model_uni, frag_color_uni},
+		{ "fragment_color" }
+	);
+
+
 }
 
 void Altimeter::render(){
+	updateMatrix();
+	line_pass->setup();	
+	CHECK_GL_ERROR(glDrawElements(GL_LINES, l_lines.size() * 2, GL_UNSIGNED_INT, 0));
 	text_pass->setup();
-	CHECK_GL_ERROR(glBindTexture(GL_TEXTURE_2D, get_font_tex()));
+	CHECK_GL_ERROR(glBindTexture(GL_TEXTURE_2D, Text::getFontTexture()));
 	CHECK_GL_ERROR(glDrawElements(GL_TRIANGLES, t_faces.size() * 3, GL_UNSIGNED_INT, 0));
+	CHECK_GL_ERROR(glBindTexture(GL_TEXTURE_2D, 0));
+	caret_pass->setup();
+	CHECK_GL_ERROR(glDrawElements(GL_TRIANGLES, c_faces.size() * 3, GL_UNSIGNED_INT, 0));
+
+}
+
+void Altimeter::updateMatrix(){
+	model[3][1] = -aircraft.position[1];
 }
 
 
