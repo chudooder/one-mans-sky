@@ -259,6 +259,7 @@ int create_skybox_tex() {
 	// Bind skybox textures
 	GLuint skybox_tex;
 	glGenTextures(1, &skybox_tex);
+	std::cout << skybox_tex << std::endl;
 	glActiveTexture(GL_TEXTURE0);
 
 

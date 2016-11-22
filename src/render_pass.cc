@@ -291,7 +291,7 @@ void RenderPass::bind_uniforms(std::vector<ShaderUniform>& uniforms,
 {
 	for (size_t i = 0; i < uniforms.size(); i++) {
 		const auto& uni = uniforms[i];
-		//std::cerr << "binding " << uni.name << std::endl;
+		// std::cerr << "binding " << uni.name << std::endl;
 		CHECK_GL_ERROR(uni.binder(unilocs[i], uni.data_source()));
 	}
 }
