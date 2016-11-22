@@ -197,8 +197,8 @@ int main(int argc, char* argv[])
 	auto std_view_data = [&mats]() -> const void* {
 		return mats.view;
 	};
-	auto std_camera_data  = [&gui]() -> const void* {
-		return &gui.getCamera()[0];
+	auto std_camera_data  = [&aircraft]() -> const void* {
+		return &aircraft.position;
 	};
 	auto std_proj_data = [&mats]() -> const void* {
 		return mats.projection;
