@@ -230,12 +230,11 @@ vec4 Heading::getClipArea(){
 
 vec2 Heading::getTranslation() {
 	float heading = atan(-aircraft.look.x, aircraft.look.z);
-	cout << heading / (2 * M_PI) * 360.0f << endl;
-	return {-heading / (2 * M_PI) * 360.0f / 130.0f, 0};
+	return {-heading / (2 * M_PI) * 360.0f / 70.0f, 0};
 }
 
 void Heading::makeText(vector<vec2>& position, vector<vec2>& uv, vector<uvec3>& faces) {
-	for(int i = -360; i <= 360; i += 10){
+	for(int i = -360; i <= 360; i += 15){
 		if(i % 90 == 0){
 			int j = (i + 360) % 360;
 			string s;
@@ -249,36 +248,77 @@ void Heading::makeText(vector<vec2>& position, vector<vec2>& uv, vector<uvec3>& 
 				s = "W";
 			}
 			Text t(s, 0.015f, 0.02f);
-			t.centerAlignGeom({0.5f + i / 130.0f, 0.93f}, position, uv, faces);
+			t.centerAlignGeom({0.5f + i / 70.0f, 0.93f}, position, uv, faces);
 		} else {	
 			string s = to_string((i + 360) % 360) + char(176);
 			Text t(s, 0.01f, 0.02f, 0.7f);
-			t.centerAlignGeom({0.504f + i / 130.0f, 0.93f}, position, uv, faces);
+			t.centerAlignGeom({0.504f + i / 70.0f, 0.93f}, position, uv, faces);
 		}
 	}
 }
-
 
 void Heading::makeLines(vector<vec2>& position, vector<uvec2>& lines) {
 	for(int i = -360; i <= 360; i += 1){
 		int b = position.size();
-		position.push_back({0.5f + i/130.0f, 0.982f});
-		if(i % 10 == 0){
-			position.push_back({0.5f + i/130.0f, 0.952f});
+		position.push_back({0.5f + i/70.0f, 0.982f});
+		if(i % 15 == 0){
+			position.push_back({0.5f + i/70.0f, 0.952f});
 		} else if (i % 5 == 0){
-			position.push_back({0.5f + i/130.0f, 0.962f});
+			position.push_back({0.5f + i/70.0f, 0.962f});
 		} else {			
-			position.push_back({0.5f + i/130.0f, 0.972f});
+			position.push_back({0.5f + i/70.0f, 0.972f});
 		}
 		lines.push_back({b, b + 1});
 	}
 }
-
 
 void Heading::makeCaret(vector<vec2>& position, vector<uvec3>& faces) {
 	position.push_back({0.5f, 0.985f});
 	position.push_back({0.504f, 0.995f});
 	position.push_back({0.496f, 0.995f});
 	faces.push_back({0, 1, 2});
+}
+
+vec4 Pitch::getClipArea(){
+	return {0, 0.3, 1, 0.7};
+}
+
+vec2 Pitch::getTranslation() {
+	float pitch = asin(aircraft.look.y);
+	return {0,  - pitch / (2 * M_PI / 360.0f) / 50.0f};
+}
+
+void Pitch::makeText(vector<vec2>& position, vector<vec2>& uv, vector<uvec3>& faces) {
+	for(int i = -90; i <= 90; i += 15){
+		string s = to_string(i) + char(176);
+		Text t(s, 0.01f, 0.02f, 0.7f);
+		t.leftAlignGeom({0.575, 0.49 + i / 50.0f}, position, uv, faces);
+	}
+}
+
+void Pitch::makeLines(vector<vec2>& position, vector<uvec2>& lines) {
+	for(int i = -90; i <= 90; i += 1){
+		int b = position.size();
+		float width;
+		if(i % 15 == 0){
+			width = 0.12f;
+		} else if (i % 5 == 0){
+			width = 0.08f;
+		} else {
+			width = 0.03;
+		}
+		position.push_back({0.5f - width / 2, 0.5f + i / 50.0f});
+		position.push_back({0.5f + width / 2, 0.5f + i / 50.0f});
+		lines.push_back({b, b + 1});
+	}
+}
+
+void Pitch::makeCaret(vector<vec2>& position, vector<uvec3>& faces) {
+	position.push_back({0.5f, 0.504f});
+	position.push_back({0.508f, 0.5f});
+	position.push_back({0.5f, 0.496f});
+	position.push_back({0.492f, 0.5f});
+	faces.push_back({0, 3, 2});
+	faces.push_back({0, 2, 1});
 }
 

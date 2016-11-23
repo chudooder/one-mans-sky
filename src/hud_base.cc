@@ -3,7 +3,7 @@
 bool HUD::_init = false;
 GLuint HUD::dialTx;
 GLuint HUD::fontTx;
-const glm::vec4 HUD::color = {0.0f, 1.0f, 0.0f, 0.6f};
+const glm::vec4 HUD::color = {0.0f, 1.0f, 0.0f, 1.0f};
 const ShaderUniform HUD::color_uni = {"frag_color", vector_binder, 
 	[]() -> const void* {
 		return &color;

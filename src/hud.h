@@ -151,5 +151,24 @@ private:
 		std::vector<glm::uvec3>& faces);	
 };
 
+class Pitch : public SliderMeter {
+	const Aircraft& aircraft;
+public:
+	Pitch(const Aircraft& a) : aircraft(a) { }
+private:
+	glm::vec4 getClipArea();
+	glm::vec2 getTranslation();
+	virtual void makeText(
+		std::vector<glm::vec2>& position, 
+		std::vector<glm::vec2>& uv, 
+		std::vector<glm::uvec3>& faces);
+	virtual void makeLines(
+		std::vector<glm::vec2>& position, 
+		std::vector<glm::uvec2>& lines);
+	virtual void makeCaret(
+		std::vector<glm::vec2>& position, 
+		std::vector<glm::uvec3>& faces);
+};
+
 
 #endif // HUD_H
