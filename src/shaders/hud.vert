@@ -12,8 +12,9 @@ void main(){
 	} else {
 		scrolled = vec4(position, 0, 1);
 	}
-	vec2 scaled = vec2((scrolled.x - 400.0)/400.0, (scrolled.y - 300.0) / 300.0);
-	gl_Position = vec4(scaled, 0, 1);
+	scrolled.xy *= 2;
+	scrolled.xy -= 1;
+	gl_Position = scrolled;
 	vs_uv = uv;
 }
 )zzz"

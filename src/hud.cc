@@ -10,7 +10,7 @@
 using namespace glm;
 using namespace std;
 
-const vec4 Altimeter::clip_area = {0, 150, 800, 450};
+const vec4 Altimeter::clip_area = {0, 0.25f, 1, 0.75f};
 const ShaderUniform Altimeter::clip_area_uni = {"clip_area", HUD::vector_binder,
 	[]() -> const void* {
 		return &Altimeter::clip_area;
@@ -27,8 +27,8 @@ Altimeter::Altimeter(const Aircraft& a)
 	// Text
 	for (int i = -10000; i < 80000; i += 100) {
 		string s = to_string(i);
-		Text t(s, 14, 0.7f, true);
-		t.getVBOs(vec2(765, 300 + i - 7), t_position, t_uv, t_faces);
+		Text t(s, 0.01f, 0.02f, 0.7f, true);
+		t.getVBOs(vec2(0.95, 0.5 + i/1000.0f - 0.01f), t_position, t_uv, t_faces);
 	}
 
 	RenderDataInput text_input;
@@ -38,7 +38,7 @@ Altimeter::Altimeter(const Aircraft& a)
 
 	text_pass = new RenderPass(-1, text_input,
 		{ HUD::vert, HUD::tri_geom, HUD::frag },
-		{ transform_uni, HUD::color_uni, clip_area_uni },
+		{ HUD::color_uni, clip_area_uni, transform_uni },
 		{ "fragment_color" }
 	);
 
@@ -47,11 +47,11 @@ Altimeter::Altimeter(const Aircraft& a)
 	for (int i = -10000; i < 80000; i += 10) {
 		int b = l_position.size();
 		if(i % 100 == 0){
-			l_position.push_back(vec2(770, 300 + i));
+			l_position.push_back(vec2(0.955, 0.5f + i/1000.0f));
 		} else {
-			l_position.push_back(vec2(780, 300 + i));
+			l_position.push_back(vec2(0.975, 0.5f + i/1000.0f));
 		}
-		l_position.push_back(vec2(788, 300 + i));
+		l_position.push_back(vec2(0.985, 0.5f + i/1000.0f));
 		l_lines.push_back(uvec2(b, b + 1));
 	}
 
@@ -61,14 +61,14 @@ Altimeter::Altimeter(const Aircraft& a)
 
 	line_pass = new RenderPass(-1, lines_input,
 		{ HUD::vert, HUD::line_geom, HUD::solid_frag },
-		{ transform_uni, HUD::color_uni, clip_area_uni },
+		{ HUD::color_uni, clip_area_uni, transform_uni },
 		{ "fragment_color" }
 	);
 
 	// Caret
-	c_position.push_back(vec2(790, 300));
-	c_position.push_back(vec2(798, 304));
-	c_position.push_back(vec2(798, 296));
+	c_position.push_back(vec2(0.987f, 0.5f));
+	c_position.push_back(vec2(0.995f, 0.505f));
+	c_position.push_back(vec2(0.995f, 0.495f));
 	c_faces.push_back(uvec3(0, 2, 1));
 
 	RenderDataInput caret_input;
@@ -96,7 +96,7 @@ void Altimeter::render(){
 }
 
 void Altimeter::updateMatrix(){
-	transform[3][1] = -aircraft.position[1];
+	transform[3][1] = -aircraft.position[1]/1000.0f;
 }
 
 Speedometer::Speedometer(const Aircraft& a) : aircraft(a) {
@@ -105,10 +105,10 @@ Speedometer::Speedometer(const Aircraft& a) : aircraft(a) {
 	}};
 
 	// Dial
-	d_position.push_back({695, -10});
-	d_position.push_back({695, 90});
-	d_position.push_back({795, -10});
-	d_position.push_back({795, 90});
+	d_position.push_back({0.89, -0.01});
+	d_position.push_back({0.89, 0.122});
+	d_position.push_back({0.99, -0.01});
+	d_position.push_back({0.99, 0.122});
 	d_uv.push_back({0, 1});
 	d_uv.push_back({0, 0});
 	d_uv.push_back({1, 1});
@@ -127,12 +127,10 @@ Speedometer::Speedometer(const Aircraft& a) : aircraft(a) {
 		{ "fragment_color" });
 
 	// Caret
-	c_position.push_back({3, 0});
-	c_position.push_back({-3, 0});
-	c_position.push_back({0, 38});
-	c_position.push_back({0, 2});
-	c_faces.push_back({2, 3, 0});
-	c_faces.push_back({3, 2, 1});
+	c_position.push_back({0.003, 0});
+	c_position.push_back({-0.003, 0});
+	c_position.push_back({0, 0.048});
+	c_faces.push_back({2, 1, 0});
 
 	RenderDataInput caret_input;
 	caret_input.assign(0, "position", c_position.data(), c_position.size(), 2, GL_FLOAT);
@@ -166,7 +164,7 @@ void Speedometer::updateTransform(){
 	rotation[2] = {0, 0, 1, 0};
 	rotation[3] = {0, 0, 0, 1};
 	mat4 translation;
-	translation[3] = {745, 40, 0, 1};
+	translation[3] = {0.94, 0.056, 0, 1};
 	transform = translation * rotation;
 }
 

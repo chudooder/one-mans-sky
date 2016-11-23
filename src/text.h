@@ -10,6 +10,7 @@ using namespace glm;
 
 class Text {
 	std::string text;
+	float width;
 	float height;
 	float aspect;
 	bool reverse;
@@ -17,15 +18,14 @@ class Text {
 public:
 	static const glm::vec4 color;
 
-	Text(std::string s, float h, float aspect = 1.0f, bool reverse = false)
-		: text(s), height(h), aspect(aspect), reverse(reverse) { }
+	Text(std::string s, float w, float h, float aspect = 1.0f, bool reverse = false)
+		: text(s), width(w), height(h), aspect(aspect), reverse(reverse) { }
 
 	void getVBOs(glm::vec2 base,
 		std::vector<glm::vec2>& position,
 		std::vector<glm::vec2>& uv,
 		std::vector<glm::uvec3>& faces) 
 	{
-		float width = height * aspect;
 		float uvheight = 1.0f/16.0f;
 		float uvwidth = uvheight * aspect;
 		if(reverse) {
