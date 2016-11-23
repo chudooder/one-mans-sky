@@ -13,14 +13,38 @@ class Text {
 	float width;
 	float height;
 	float aspect;
-	bool reverse;
 
 public:
 	static const glm::vec4 color;
 
-	Text(std::string s, float w, float h, float aspect = 1.0f, bool reverse = false)
-		: text(s), width(w), height(h), aspect(aspect), reverse(reverse) { }
+	Text(std::string s, float w, float h, float aspect = 1.0f)
+		: text(s), width(w), height(h), aspect(aspect) { }
 
+	void leftAlignGeom(glm::vec2 base,
+		std::vector<glm::vec2>& position,
+		std::vector<glm::vec2>& uv,
+		std::vector<glm::uvec3>& faces)
+	{
+		getVBOs(base, position, uv, faces);
+	}
+
+	void rightAlignGeom(glm::vec2 base,
+		std::vector<glm::vec2>& position,
+		std::vector<glm::vec2>& uv,
+		std::vector<glm::uvec3>& faces)
+	{
+		getVBOs(glm::vec2(base.x - width * text.length(), base.y), position, uv, faces);
+	}
+
+	void centerAlignGeom(glm::vec2 base,
+		std::vector<glm::vec2>& position,
+		std::vector<glm::vec2>& uv,
+		std::vector<glm::uvec3>& faces)
+	{
+		getVBOs(glm::vec2(base.x - width * text.length() / 2, base.y), position, uv, faces);
+	}
+
+private:
 	void getVBOs(glm::vec2 base,
 		std::vector<glm::vec2>& position,
 		std::vector<glm::vec2>& uv,
@@ -28,9 +52,6 @@ public:
 	{
 		float uvheight = 1.0f/16.0f;
 		float uvwidth = uvheight * aspect;
-		if(reverse) {
-			base[0] -= text.length() * width;
-		}
 
 		for(unsigned i = 0; i < text.length(); i++){
 			int index = position.size();

@@ -133,6 +133,7 @@ int main(int argc, char* argv[])
 	GUI gui(window, &aircraft);
 	Altimeter altimeter(aircraft);
 	Speedometer speedometer(aircraft);
+	Throttometer throttometer(aircraft);
 
 	// Get skybox geometry
 	std::vector<glm::vec4> skybox_vertices;
@@ -404,6 +405,7 @@ int main(int argc, char* argv[])
 
 		altimeter.render();
 		speedometer.render();
+		throttometer.render();
 		
 		// Poll and swap.
 		glfwPollEvents();
