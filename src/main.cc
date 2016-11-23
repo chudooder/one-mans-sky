@@ -340,7 +340,7 @@ int main(int argc, char* argv[])
 		glCullFace(GL_BACK);
 
         std::chrono::duration<double> diff = curTime-lastTime;
-		// aircraft.physicsStep(diff.count());
+		aircraft.physicsStep(diff.count());
 		mats = aircraft.getMatrixPointers();
 
 		glm::vec3 refl_pos = aircraft.position;
