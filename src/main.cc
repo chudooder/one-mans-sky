@@ -27,6 +27,7 @@
 #include <thread>
 
 int window_width = 800, window_height = 600;
+int buffer_width, buffer_height;
 const std::string window_title = "One Man's Sky";
 
 const char* vertex_shader =
@@ -82,14 +83,14 @@ void init_refl_buffer(GLuint& reflection_buffer, GLuint& reflection_texture) {
 	glGenTextures(1, &reflection_texture);
 	glBindTexture(GL_TEXTURE_2D, reflection_texture);
 
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, window_width, window_height, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, buffer_width, buffer_height, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 
 	GLuint depthrenderbuffer;
 	glGenRenderbuffers(1, &depthrenderbuffer);
 	glBindRenderbuffer(GL_RENDERBUFFER, depthrenderbuffer);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, window_width, window_height);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, buffer_width, buffer_height);
 	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthrenderbuffer);
 
 	glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, reflection_texture, 0);
@@ -128,10 +129,14 @@ GLFWwindow* init_glefw()
 int main(int argc, char* argv[])
 {
 	GLFWwindow *window = init_glefw();
+	glfwGetFramebufferSize(window, &buffer_width, &buffer_height);
 	Aircraft aircraft(window);
 	GUI gui(window, &aircraft);
 	Altimeter altimeter(aircraft);
-
+	Speedometer speedometer(aircraft);
+	Throttometer throttometer(aircraft);
+	Heading heading(aircraft);
+	Pitch pitch(aircraft);
 
 	// Get skybox geometry
 	std::vector<glm::vec4> skybox_vertices;
@@ -337,8 +342,8 @@ int main(int argc, char* argv[])
 
 	while (!glfwWindowShouldClose(window)) {
 		// Setup some basic window stuff.
-		glfwGetFramebufferSize(window, &window_width, &window_height);
-		glViewport(0, 0, window_width, window_height);
+		glfwGetFramebufferSize(window, &buffer_width, &buffer_height);
+		glViewport(0, 0, buffer_width, buffer_height);
 		glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 		glEnable(GL_DEPTH_TEST);
 		glEnable(GL_MULTISAMPLE);
@@ -403,10 +408,16 @@ int main(int argc, char* argv[])
 
 			water_pass.setup();
 			CHECK_GL_ERROR(glBindTexture(GL_TEXTURE_2D, reflection_texture));
+			CHECK_GL_ERROR(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, buffer_width, buffer_height, 0, GL_RGB, GL_UNSIGNED_BYTE, 0));
+	
 			CHECK_GL_ERROR(glDrawElements(GL_TRIANGLES, water_faces.size() * 3, GL_UNSIGNED_INT, 0));
 		}
 
 		altimeter.render();
+		speedometer.render();
+		throttometer.render();
+		heading.render();
+		pitch.render();
 		
 		// Poll and swap.
 		glfwPollEvents();

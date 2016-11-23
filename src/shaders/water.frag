@@ -6,6 +6,7 @@ in vec4 light_direction;
 in vec4 camera_direction;
 in vec2 uv_coords;
 in vec4 gl_FragCoord;
+in vec4 screen_position;
 uniform sampler2D textureSampler;
 out vec4 fragment_color;
 
@@ -17,7 +18,8 @@ void main() {
 	float cos_theta = dot(normalize(camera_direction.xyz), normalize(vertex_normal.xyz));
 	float reflectance = R0 + (1 - R0) * pow(1 - cos_theta, 5);
 
-	vec4 reflColor = texture(textureSampler, vec2(gl_FragCoord.x / -800.0, gl_FragCoord.y / 600.0));
+	vec2 refl_uv = (screen_position.xy / screen_position.w * vec2(-1, 1) + 1.0) / 2.0;
+	vec4 reflColor = texture(textureSampler, refl_uv);
 	vec4 ambient = vec4(0.4, 0.4, 0.9, 0.3);
 
 	fragment_color = (1 - reflectance) * ambient + reflectance * reflColor;
