@@ -7,6 +7,7 @@
 #include "chunk.h"
 #include "gui.h"
 #include "aircraft.h"
+#include "hud.h"
 
 #include <algorithm>
 #include <fstream>
@@ -74,6 +75,31 @@ void ErrorCallback(int error, const char* description) {
 	std::cerr << "GLFW Error: " << description << "\n";
 }
 
+void init_refl_buffer(GLuint& reflection_buffer, GLuint& reflection_texture) {
+	reflection_buffer = 0;
+	glGenFramebuffers(1, &reflection_buffer);
+	glBindFramebuffer(GL_FRAMEBUFFER, reflection_buffer);
+	glGenTextures(1, &reflection_texture);
+	glBindTexture(GL_TEXTURE_2D, reflection_texture);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, window_width, window_height, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
+	GLuint depthrenderbuffer;
+	glGenRenderbuffers(1, &depthrenderbuffer);
+	glBindRenderbuffer(GL_RENDERBUFFER, depthrenderbuffer);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, window_width, window_height);
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthrenderbuffer);
+
+	glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, reflection_texture, 0);
+	GLenum DrawBuffers[1] = {GL_COLOR_ATTACHMENT0};
+	glDrawBuffers(1, DrawBuffers);
+
+	if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		std::cout << "Reflection framebuffer setup went wrong!" << std::endl;
+}
+
 GLFWwindow* init_glefw()
 {
 	if (!glfwInit())
@@ -104,6 +130,7 @@ int main(int argc, char* argv[])
 	GLFWwindow *window = init_glefw();
 	Aircraft aircraft(window);
 	GUI gui(window, &aircraft);
+	Altimeter altimeter(aircraft);
 
 
 	// Get skybox geometry
@@ -175,8 +202,12 @@ int main(int argc, char* argv[])
 	std::vector<glm::vec2> water_uv;
 	create_water(water_vertices, water_faces, water_uv);
 
+
 	glm::vec4 light_position = glm::vec4(kFloorXMax, 5000.0f, kFloorZMax, 1.0f);
 	MatrixPointers mats; // Define MatrixPointers here for lambda to capture
+	GLuint reflection_buffer, reflection_texture;
+	init_refl_buffer(reflection_buffer, reflection_texture);
+
 	/*
 	 * In the following we are going to define several lambda functions to bind Uniforms.
 	 * 
@@ -218,7 +249,7 @@ int main(int argc, char* argv[])
 		return &refl_view_mat[0][0];
 	};
 	auto std_camera_data  = [&aircraft]() -> const void* {
-		return &aircraft.position[0];
+		return &aircraft.position;
 	};
 	auto std_proj_data = [&mats]() -> const void* {
 		return mats.projection;
@@ -252,41 +283,27 @@ int main(int argc, char* argv[])
 			{ "fragment_color" }
 			);
 
-	RenderDataInput reflection_pass_input;
-	reflection_pass_input.assign(0, "vertex_position", floor_verts.data(), floor_verts.size(), 4, GL_FLOAT);
-	reflection_pass_input.assign(1, "normal", floor_normals.data(), floor_normals.size(), 4, GL_FLOAT);
-	reflection_pass_input.assign(2, "uv", floor_uv.data(), floor_uv.size(), 2, GL_FLOAT);
-	reflection_pass_input.assign_index(floor_faces.data(), floor_faces.size(), 3);
-	RenderPass reflection_pass(-1,
-			reflection_pass_input,
+	RenderDataInput floor_refl_pass_input;
+	floor_refl_pass_input.assign(0, "vertex_position", floor_verts.data(), floor_verts.size(), 4, GL_FLOAT);
+	floor_refl_pass_input.assign(1, "normal", floor_normals.data(), floor_normals.size(), 4, GL_FLOAT);
+	floor_refl_pass_input.assign(2, "uv", floor_uv.data(), floor_uv.size(), 2, GL_FLOAT);
+	floor_refl_pass_input.assign_index(floor_faces.data(), floor_faces.size(), 3);
+	RenderPass floor_refl_pass(-1,
+			floor_refl_pass_input,
 			{ vertex_shader, geometry_shader, floor_ref_fragment_shader},
 			{ floor_model, refl_view, std_proj, std_light },
 			{ "fragment_color" }
 			);
 
-	GLuint reflection_buffer = 0;
-	glGenFramebuffers(1, &reflection_buffer);
-	glBindFramebuffer(GL_FRAMEBUFFER, reflection_buffer);
-	GLuint reflection_texture;
-	glGenTextures(1, &reflection_texture);
-	glBindTexture(GL_TEXTURE_2D, reflection_texture);
-
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, window_width, window_height, 0, GL_RGB, GL_UNSIGNED_BYTE, 0);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-
-	GLuint depthrenderbuffer;
-	glGenRenderbuffers(1, &depthrenderbuffer);
-	glBindRenderbuffer(GL_RENDERBUFFER, depthrenderbuffer);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH_COMPONENT, window_width, window_height);
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_RENDERBUFFER, depthrenderbuffer);
-
-	glFramebufferTexture(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, reflection_texture, 0);
-	GLenum DrawBuffers[1] = {GL_COLOR_ATTACHMENT0};
-	glDrawBuffers(1, DrawBuffers);
-
-	if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-		std::cout << "Reflection framebuffer setup went wrong!" << std::endl;
+	RenderDataInput skybox_refl_pass_input;
+	skybox_refl_pass_input.assign(0, "vertex_position", skybox_vertices.data(), skybox_vertices.size(), 4, GL_FLOAT);
+	skybox_refl_pass_input.assign_index(skybox_faces.data(), skybox_faces.size(), 3);
+	RenderPass skybox_refl_pass(-1,
+			skybox_refl_pass_input,
+			{ skybox_vertex_shader, skybox_geometry_shader, skybox_fragment_shader },
+			{ refl_view, std_proj, std_light },
+			{ "fragment_color" }
+			);
 
 	RenderDataInput water_pass_input;
 	water_pass_input.assign(0, "vertex_position", water_vertices.data(), water_vertices.size(), 4, GL_FLOAT);
@@ -365,20 +382,31 @@ int main(int argc, char* argv[])
 			CHECK_GL_ERROR(glDrawElements(GL_TRIANGLES, floor_faces.size() * 3, GL_UNSIGNED_INT, 0));
 		}
 
-		// Do a reflection render pass.
 		if (draw_water) {
+			// reflections
 			glBindFramebuffer(GL_FRAMEBUFFER, reflection_buffer);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-			reflection_pass.setup();
-			CHECK_GL_ERROR(glDrawElements(GL_TRIANGLES, floor_faces.size() * 3, GL_UNSIGNED_INT, 0));
-			glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		}
 
-		if (draw_water) {
+			if(draw_skybox) {
+				CHECK_GL_ERROR(glDepthMask(GL_FALSE));
+				skybox_refl_pass.setup();
+				CHECK_GL_ERROR(glBindTexture(GL_TEXTURE_CUBE_MAP, skybox_tex));
+				CHECK_GL_ERROR(glDrawElements(GL_TRIANGLES, skybox_faces.size() * 3, GL_UNSIGNED_INT, 0));
+				CHECK_GL_ERROR(glDepthMask(GL_TRUE));
+			}
+
+			if (draw_floor) {
+				floor_refl_pass.setup();
+				CHECK_GL_ERROR(glDrawElements(GL_TRIANGLES, floor_faces.size() * 3, GL_UNSIGNED_INT, 0));
+			}
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
 			water_pass.setup();
 			CHECK_GL_ERROR(glBindTexture(GL_TEXTURE_2D, reflection_texture));
 			CHECK_GL_ERROR(glDrawElements(GL_TRIANGLES, water_faces.size() * 3, GL_UNSIGNED_INT, 0));
 		}
+
+		altimeter.render();
 		
 		// Poll and swap.
 		glfwPollEvents();

@@ -28,8 +28,9 @@
 *.app
 
 # Screenshots
-*.jpg
+
 
 # Custom
 assets/pmd/*
 build/
+third-party/

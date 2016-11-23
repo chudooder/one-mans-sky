@@ -32,7 +32,9 @@ void create_skybox(
 
 int create_skybox_tex();
 
-vector<vector<float>> perlin_noise(int seed, int size, int depth);
+vector<vector<float>> random_noise(int size);
+
+vector<vector<float>> perlin_noise(float x, float z, int size, int depth);
 
 
 

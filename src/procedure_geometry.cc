@@ -4,6 +4,7 @@
 #include <image.h>
 #include "jpegio.h"
 #include <debuggl.h>
+#include <string>
 
 glm::vec4 compute_vertex_normal(
 	const int i, 
@@ -35,6 +36,7 @@ glm::vec4 compute_vertex_normal(
 
 float noise_to_height(float val) {
 	return kFloorY + kFloorHeight * val * val * val;
+	// return kFloorY + kFloorHeight * val;
 }
 
 template <typename T>
@@ -50,7 +52,7 @@ void create_floor(
 	std::vector<glm::vec2>& floor_uv)
 {
 	int width = pow(2, kFloorSize);
-	auto terrain = perlin_noise((int) position.x * 193939 + (int) position.z, kFloorSize, kFloorDepth);
+	auto terrain = perlin_noise((int) position.x, (int) position.z, kFloorSize, kFloorDepth);
 
 	float sep = (kFloorWidth) / (float) width;
 	float uv_sep = 1.0 / (float) width;
@@ -207,45 +209,118 @@ void create_skybox(
 	sky_faces.push_back(glm::uvec3(2, 4, 6));
 }
 
+vector<vector<float>> random_noise(int size) {
+	int width = pow(2, size);
+	vector<vector<float>> noise(width, vector<float>(width, 0.0f));
+	std::cout << "width = " << width << std::endl;
+	for(int i = 0; i < width; i++) {
+		for(int j = 0; j < width; j++) {
+			noise[i][j] = (float) rand() / RAND_MAX;
+		}
+	}
+	return noise;
+}
 
+struct RandomPatch {
+	vector<vector<vector<float>>> noise_levels;
 
-vector<vector<float>> perlin_noise(int seed, int size, int depth) {
-
-	srand(seed);
-
-	int init_width = pow(2, size - depth);
-	vector<vector<float>> noise(init_width, vector<float>(init_width, 0.0f));
-	for(int i = 0; i < init_width; ++i) {
-		for(int j = 0; j < init_width; ++j) {
-			noise[i][j] += ((float) rand() / RAND_MAX);
+	// depth == number of smaller patches to generate
+	RandomPatch(int seed, int size, int depth) {
+		srand(seed);
+		std::cout << "Creating patch of size " << size << " and depth " << depth << std::endl;
+		for(int cur_depth = 0; cur_depth < depth; ++cur_depth) {
+			std::cout << "cur_depth = " << cur_depth << std::endl;
+			noise_levels.push_back(random_noise(size - depth + cur_depth + 1));
 		}
 	}
 
-	for (int cur_depth = 0; cur_depth < depth; ++cur_depth) {
+	float val(int cur_depth, int i, int j) const {
+		return noise_levels[cur_depth][i][j];
+	}
+};
+
+float get_patch_value(
+	const vector<RandomPatch>& patches, 
+	int patch,
+	int cur_depth, 
+	int i, 
+	int j)
+{
+	int width = patches[0].noise_levels[cur_depth].size();
+	if(i < 0) {
+		patch -= 1;
+		i = width + i;
+	} else if(i >= width) {
+		patch += 1;
+		i = i - width;
+	}
+
+	if(j < 0) {
+		patch -= 3;
+		j = width + j;
+	} else if(j >= width) {
+		patch += 3;
+		j = j - width;
+	}
+
+	return patches[patch].val(cur_depth, i, j);
+};
+
+vector<vector<float>> perlin_noise(float x, float z, int size, int depth) {
+	vector<RandomPatch> patches;
+	/*
+	 0 1 2
+	 3 4 5
+	 6 7 8
+	*/
+	for(int i = 0; i < 9; i++) {
+		float xpos = x + ((i % 3) - 1) * pow(2, size);
+		float zpos = z + ((i / 3) - 1) * pow(2, size);
+		int seed = (int) x * 15485863 + z;
+		patches.push_back(RandomPatch(seed, size, depth));
+	}
+
+	for(int cur_depth = 1; cur_depth < depth; ++cur_depth) {
 		int width = pow(2, size - depth + cur_depth + 1);
-		// upsample noise
+		std::cout << "Upsampling, cur_depth = " << cur_depth << ", width = " << width << std::endl;
 		vector<vector<float>> upsampled(width, vector<float>(width, 0.0f));
 		for(int i = 0; i < width; ++i) {
 			for(int j = 0; j < width; ++j) {
 				// ~*.~~*.~* MAGIC *.*~.*~~ //
-				int i2 = clamp(0, width/2 - 1, i/2 - 1 + 2 * (i % 2));
-				int j2 = clamp(0, width/2 - 1, j/2 - 1 + 2 * (j % 2));
+				int i2 = i/2 - 1 + 2 * (i % 2);
+				int j2 = j/2 - 1 + 2 * (j % 2);
 				float a, b, c, d;
-				a = noise[i/2][j/2];
-				b = noise[i/2][j2];
-				c = noise[i2][j/2];
-				d = noise[i2][j2];
+				a = get_patch_value(patches, 4, cur_depth - 1, i/2, j/2);
+				b = get_patch_value(patches, 4, cur_depth - 1, i/2, j2);
+				c = get_patch_value(patches, 4, cur_depth - 1, i2, j/2);
+				d = get_patch_value(patches, 4, cur_depth - 1, i2, j2);
 
-				upsampled[i][j] = clamp(0.0f, 1.0f, (9 * a + 3 * (b + c) + d) / 16.0f +
-					((float) rand() / RAND_MAX - 0.5f) * (float) pow(0.4f, cur_depth));
+				// std::cout << (9 * a + 3 * (b + c) + d) / 16.0f << std::endl;
+
+				upsampled[i][j] = clamp(0.0f, 1.0f, 
+					(9 * a + 3 * (b + c) + d) / 16.0f +
+					(patches[4].val(cur_depth, i, j) - 0.5f) * (float) pow(0.4f, cur_depth));
 			}
 		}
 
-		noise = move(upsampled);
+		patches[4].noise_levels[cur_depth] = move(upsampled);
 	}
 
-	return noise;
-}
+	// write noise to file
+	unsigned char pixels[(int) (pow(2, size) * pow(2, size) * 3)];
+	int index = 0;
+	for(int i = 0; i < pow(2, size); i++) {
+		for(int j = 0; j < pow(2, size); j++) {
+			char val = (char) (patches[4].val(depth - 1, i, j) * 256);
+			pixels[index++] = val;
+			pixels[index++] = val;
+			pixels[index++] = val;
+		}
+	}
+	SaveJPEG("noise_" + std::to_string((int)x) + "_" + std::to_string((int)z) + ".jpg", pow(2, size), pow(2, size), &pixels[0]);
+
+	return patches[4].noise_levels[depth - 1];
+};
 
 int create_skybox_tex() {
 	// Load skybox image
@@ -260,6 +335,7 @@ int create_skybox_tex() {
 	// Bind skybox textures
 	GLuint skybox_tex;
 	glGenTextures(1, &skybox_tex);
+	std::cout << skybox_tex << std::endl;
 	glActiveTexture(GL_TEXTURE0);
 
 
