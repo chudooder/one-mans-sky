@@ -43,11 +43,10 @@ bool Aircraft::input(int key, int action){
 
 void Aircraft::physicsStep(float time){
 
-	position += airspeed * time;
+	// position += airspeed * time;
 
 	float altitude = position[1];
 	float air_density = 1.225 * (ATMOSPHERE_ALT - altitude) / ATMOSPHERE_ALT;
-	// float aoa = asin(length(cross(look, normalize(airspeed))));
 	float aoa = acos(dot(up, normalize(airspeed))) - M_PI/2;
 
 	float lift_c = BASE_LIFT + 2 * M_PI * aoa;
@@ -70,11 +69,11 @@ void Aircraft::physicsStep(float time){
 	airspeed += (weight + thrust + drag + lift) * time;
 
 	// Stability
-	vec3 stabAxis = cross(look, glm::normalize(airspeed));
-	if(length(stabAxis) > 0){
-		up = rotate(up, STABILITY * length(airspeed) * length(stabAxis) * time, stabAxis);
-		look = rotate(look, STABILITY * length(airspeed) * length(stabAxis) * time, stabAxis);
-	}
+	// vec3 stabAxis = cross(look, glm::normalize(airspeed));
+	// if(length(stabAxis) > 0){
+	// 	up = rotate(up, STABILITY * length(airspeed) * length(stabAxis) * time, stabAxis);
+	// 	look = rotate(look, STABILITY * length(airspeed) * length(stabAxis) * time, stabAxis);
+	// }
 
 	// Debug
 	if(TELEMETRY){

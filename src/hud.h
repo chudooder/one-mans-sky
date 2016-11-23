@@ -8,11 +8,11 @@
 #include "hud_base.h"
 #include "aircraft.h"
 
-class Altimeter {
+class SliderMeter {
+	bool _setup = false;
 	RenderPass* text_pass;
 	RenderPass* line_pass;
 	RenderPass* caret_pass;
-	const Aircraft& aircraft;
 
 	//VBOs
 	std::vector<glm::vec2> t_position;
@@ -29,14 +29,25 @@ class Altimeter {
 	glm::mat4 transform;
 	ShaderUniform transform_uni;
 
-	const static glm::vec4 clip_area;
-	const static ShaderUniform clip_area_uni;
+	glm::vec4 clip_area;
+	ShaderUniform clip_area_uni;
 
 public:
-	Altimeter(const Aircraft& a);
+	void setup();
 	void render();
 private:
-	void updateMatrix();
+	virtual glm::vec2 getTranslation() = 0;
+	virtual glm::vec4 getClipArea() = 0;
+	virtual void makeText(
+		std::vector<glm::vec2>& position, 
+		std::vector<glm::vec2>& uv, 
+		std::vector<glm::uvec3>& faces) = 0;
+	virtual void makeLines(
+		std::vector<glm::vec2>& position, 
+		std::vector<glm::uvec2>& lines) = 0;
+	virtual void makeCaret(
+		std::vector<glm::vec2>& position, 
+		std::vector<glm::uvec3>& faces) = 0;
 };
 
 class DialMeter {
@@ -100,6 +111,44 @@ public:
 		str << std::fixed << aircraft.throttle * 100 << "%";
 		return str.str();
 	}
+};
+
+class Altimeter : public SliderMeter {
+	const Aircraft& aircraft;
+public:
+	Altimeter(const Aircraft& a) : aircraft(a) { }
+private:
+	virtual glm::vec2 getTranslation();
+	virtual glm::vec4 getClipArea();
+	virtual void makeText(
+		std::vector<glm::vec2>& position, 
+		std::vector<glm::vec2>& uv, 
+		std::vector<glm::uvec3>& faces);
+	virtual void makeLines(
+		std::vector<glm::vec2>& position, 
+		std::vector<glm::uvec2>& lines);
+	virtual void makeCaret(
+		std::vector<glm::vec2>& position, 
+		std::vector<glm::uvec3>& faces);
+};
+
+class Heading : public SliderMeter {
+	const Aircraft& aircraft;
+public:
+	Heading(const Aircraft& a) : aircraft(a) { }
+private:
+	glm::vec4 getClipArea();
+	glm::vec2 getTranslation();
+	virtual void makeText(
+		std::vector<glm::vec2>& position, 
+		std::vector<glm::vec2>& uv, 
+		std::vector<glm::uvec3>& faces);
+	virtual void makeLines(
+		std::vector<glm::vec2>& position, 
+		std::vector<glm::uvec2>& lines);
+	virtual void makeCaret(
+		std::vector<glm::vec2>& position, 
+		std::vector<glm::uvec3>& faces);	
 };
 
 
