@@ -18,12 +18,10 @@ void main(){
 	){
 		discard;
 	}
-
-	vec3 texcolor = texture(textureSampler, uv_coords).xyz;
-	if(length(texcolor) < 0.5) {
-		fragment_color = vec4(0, 0, 0, 0);
-	} else {
-		fragment_color = frag_color;
+	float alpha = texture(textureSampler, uv_coords).x;
+	if(alpha == 0.0){
+		discard;
 	}
+	fragment_color = frag_color * vec4(1, 1, 1, alpha);
 }
 )zzz"

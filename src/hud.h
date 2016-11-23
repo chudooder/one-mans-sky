@@ -4,6 +4,7 @@
 #include <GL/glew.h>
 #include <glm/glm.hpp>
 #include "render_pass.h"
+#include "hud_base.h"
 #include "aircraft.h"
 
 class Altimeter {
@@ -23,14 +24,41 @@ class Altimeter {
 	std::vector<glm::vec2> c_position;
 	std::vector<glm::uvec3> c_faces;
 
+	// Uniforms
 	glm::mat4 transform;
+	ShaderUniform transform_uni;
 
-	static glm::vec4 clip_area;
+	const static glm::vec4 clip_area;
+	const static ShaderUniform clip_area_uni;
+
 public:
 	Altimeter(const Aircraft& a);
 	void render();
 private:
 	void updateMatrix();
+};
+
+class Speedometer {
+	const Aircraft& aircraft;
+
+	RenderPass* dial_pass;
+	RenderPass* caret_pass;
+
+	std::vector<glm::vec2> d_position;
+	std::vector<glm::vec2> d_uv;
+	std::vector<glm::uvec3> d_faces;
+
+	std::vector<glm::vec2> c_position;
+	std::vector<glm::uvec3> c_faces;
+
+	glm::mat4 transform;
+	ShaderUniform transform_uni;
+
+public:
+	Speedometer(const Aircraft& a);
+	void render();
+private:
+	void updateTransform();
 };
 
 

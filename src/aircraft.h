@@ -27,7 +27,6 @@ struct MatrixPointers;
 
 
 class Aircraft {
-	glm::vec3 airspeed = glm::vec3(0.0f, 0.0f, 100.0f);
 	float throttle = 1.0f;
 
 	// Controls
@@ -42,6 +41,7 @@ class Aircraft {
 	glm::mat4 view;
 
 public:
+	glm::vec3 airspeed = glm::vec3(0.0f, 0.0f, 100.0f);
 	glm::vec3 position = glm::vec3(0.0f, 100.0f, 0.0f);
 	glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
 	glm::vec3 look = glm::vec3(0.0f, 0.0f, 1.0f);
