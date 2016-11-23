@@ -129,7 +129,7 @@ int main(int argc, char* argv[])
 {
 	GLFWwindow *window = init_glefw();
 	glfwGetFramebufferSize(window, &buffer_width, &buffer_height);
-	Aircraft aircraft(window);
+	KinematicAircraft aircraft(window);
 	GUI gui(window, &aircraft);
 	Altimeter altimeter(aircraft);
 	Speedometer speedometer(aircraft);

@@ -25,9 +25,8 @@
 
 struct MatrixPointers;
 
-
 class Aircraft {
-
+protected:
 	// Controls
 	float throttleUp = 0.0f;
 	float pitchUp = 0.0f;
@@ -44,13 +43,21 @@ public:
 	glm::vec3 airspeed = glm::vec3(0.0f, 0.0f, -100.0f);
 	glm::vec3 position = glm::vec3(0.0f, 100.0f, 100.0f);
 	glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
-	glm::vec3 look = glm::vec3(0.0f, 0.0f, 1.0f);
+	glm::vec3 look = glm::vec3(0.0f, 0.0f, -1.0f);
 
 	Aircraft(GLFWwindow* window);
 
-	bool input(int key, int action);
-	void physicsStep(float time);
+	virtual bool input(int key, int action);
+	virtual void physicsStep(float time);
 	MatrixPointers getMatrixPointers();
+};
+
+class KinematicAircraft : public Aircraft {
+	glm::vec3 translation;
+public:
+	KinematicAircraft(GLFWwindow* window): Aircraft(window) { }
+	virtual bool input(int key, int action);
+	virtual void physicsStep(float time);
 };
 
 
