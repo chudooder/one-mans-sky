@@ -43,7 +43,7 @@ bool Aircraft::input(int key, int action){
 
 void Aircraft::physicsStep(float time){
 
-	// position += airspeed * time;
+	position += airspeed * time;
 
 	float altitude = position[1];
 	float air_density = 1.225 * (ATMOSPHERE_ALT - altitude) / ATMOSPHERE_ALT;

@@ -180,6 +180,16 @@ void create_water(
 	}
 }
 
+float blerp(float a, float b, float c, float d, float x, float y) {
+	/*
+	a b
+
+	c d
+	*/
+	return (1.0f - y) * ((1.0f - x) * a + x * b)
+		+ y * ((1.0f - x) * c + x * d);
+}
+
 void create_skybox(
 	std::vector<glm::vec4>& sky_vertices, 
 	std::vector<glm::uvec3>& sky_faces,
@@ -215,7 +225,7 @@ vector<vector<float>> random_noise(int size) {
 	std::cout << "width = " << width << std::endl;
 	for(int i = 0; i < width; i++) {
 		for(int j = 0; j < width; j++) {
-			noise[i][j] = (float) rand() / RAND_MAX;
+			noise[i][j] = ((float) rand() / RAND_MAX);
 		}
 	}
 	return noise;
@@ -223,6 +233,7 @@ vector<vector<float>> random_noise(int size) {
 
 struct RandomPatch {
 	vector<vector<vector<float>>> noise_levels;
+	vector<vector<vector<float>>> upsampled;
 
 	// depth == number of smaller patches to generate
 	RandomPatch(int seed, int size, int depth) {
@@ -263,6 +274,10 @@ float get_patch_value(
 		j = j - width;
 	}
 
+	if(patch < 0 || patch >= patches.size()) {
+		return 0;
+	}
+
 	return patches[patch].val(cur_depth, i, j);
 };
 
@@ -280,30 +295,47 @@ vector<vector<float>> perlin_noise(float x, float z, int size, int depth) {
 		patches.push_back(RandomPatch(seed, size, depth));
 	}
 
-	for(int cur_depth = 1; cur_depth < depth; ++cur_depth) {
-		int width = pow(2, size - depth + cur_depth + 1);
-		std::cout << "Upsampling, cur_depth = " << cur_depth << ", width = " << width << std::endl;
+	vector<vector<vector<float>>> octaves;
+
+	int width = pow(2, size); // final upsampled size
+	for(int cur_depth = 0; cur_depth < depth - 1; ++cur_depth) {
+		int factor = pow(2, depth - cur_depth - 1);
+		std::cout << "Upsampling, cur_depth = " << cur_depth << ", factor = " << factor << std::endl;
 		vector<vector<float>> upsampled(width, vector<float>(width, 0.0f));
 		for(int i = 0; i < width; ++i) {
 			for(int j = 0; j < width; ++j) {
 				// ~*.~~*.~* MAGIC *.*~.*~~ //
-				int i2 = i/2 - 1 + 2 * (i % 2);
-				int j2 = j/2 - 1 + 2 * (j % 2);
+				int i2 = i/factor + 1;
+				int j2 = j/factor + 1;
 				float a, b, c, d;
-				a = get_patch_value(patches, 4, cur_depth - 1, i/2, j/2);
-				b = get_patch_value(patches, 4, cur_depth - 1, i/2, j2);
-				c = get_patch_value(patches, 4, cur_depth - 1, i2, j/2);
-				d = get_patch_value(patches, 4, cur_depth - 1, i2, j2);
+				a = get_patch_value(patches, 4, cur_depth, i/factor, j/factor);
+				b = get_patch_value(patches, 4, cur_depth, i/factor, j2);
+				c = get_patch_value(patches, 4, cur_depth, i2, j/factor);
+				d = get_patch_value(patches, 4, cur_depth, i2, j2);
 
-				// std::cout << (9 * a + 3 * (b + c) + d) / 16.0f << std::endl;
+				float u = (float) (j % factor) / factor;
+				float v = (float) (i % factor) / factor;
 
-				upsampled[i][j] = clamp(0.0f, 1.0f, 
-					(9 * a + 3 * (b + c) + d) / 16.0f +
-					(patches[4].val(cur_depth, i, j) - 0.5f) * (float) pow(0.4f, cur_depth));
+				float val = blerp(a, b, c, d, u, v);
+
+				upsampled[i][j] = clamp(0.0f, 1.0f, val);
 			}
 		}
+		octaves.push_back(upsampled);
+	}
 
-		patches[4].noise_levels[cur_depth] = move(upsampled);
+	vector<vector<float>> noise(width, vector<float>(width, 0.0f));
+	for(int oct = 0; oct < octaves.size(); oct++) {
+		vector<vector<float>>& octave = octaves[oct];
+		for(int i=0; i<width; ++i) {
+			for(int j=0; j<width; ++j) {
+				if(oct == 0) {
+					noise[i][j] += octave[i][j];
+				} else {
+					noise[i][j] += pow(0.4, oct) * octave[i][j];
+				}
+			}
+		}
 	}
 
 	// write noise to file
@@ -311,7 +343,7 @@ vector<vector<float>> perlin_noise(float x, float z, int size, int depth) {
 	int index = 0;
 	for(int i = 0; i < pow(2, size); i++) {
 		for(int j = 0; j < pow(2, size); j++) {
-			char val = (char) (patches[4].val(depth - 1, i, j) * 256);
+			char val = (char) (noise[i][j] * 256);
 			pixels[index++] = val;
 			pixels[index++] = val;
 			pixels[index++] = val;
@@ -319,7 +351,7 @@ vector<vector<float>> perlin_noise(float x, float z, int size, int depth) {
 	}
 	SaveJPEG("noise_" + std::to_string((int)x) + "_" + std::to_string((int)z) + ".jpg", pow(2, size), pow(2, size), &pixels[0]);
 
-	return patches[4].noise_levels[depth - 1];
+	return noise;
 };
 
 int create_skybox_tex() {

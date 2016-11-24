@@ -153,7 +153,7 @@ int main(int argc, char* argv[])
 	// Create floor data
 	for(int i=0; i<3; i++) {
 		for(int j=0; j<3; j++) {
-			chunks.push_back(Chunk(-1024.0f + kFloorWidth * i, -1024.0f + kFloorWidth * j));
+			chunks.push_back(Chunk(kFloorXMin + kFloorWidth * i, kFloorZMin + kFloorWidth * j));
 		}
 	}
 
