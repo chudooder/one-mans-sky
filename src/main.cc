@@ -151,9 +151,9 @@ int main(int argc, char* argv[])
 	std::vector<Chunk> chunks;
 
 	// Create floor data
-	for(int i=0; i<3; i++) {
-		for(int j=0; j<3; j++) {
-			chunks.push_back(Chunk(kFloorXMin + kFloorWidth * i, kFloorZMin + kFloorWidth * j));
+	for(int i=0; i<kChunkDraw; i++) {
+		for(int j=0; j<kChunkDraw; j++) {
+			chunks.push_back(Chunk(kFloorXMin + kFloorWidth * j, kFloorZMin + kFloorWidth * i));
 		}
 	}
 
@@ -162,43 +162,8 @@ int main(int argc, char* argv[])
 	std::vector<glm::vec4> floor_normals;
 	std::vector<glm::vec2> floor_uv;
 
-	for(int i=0; i<chunks.size(); i++) {
-		Chunk& c = chunks[i];
-		int offset = floor_verts.size();
-		floor_verts.insert(floor_verts.end(), c.geom_verts.begin(), c.geom_verts.end());
-		// manually do the insert for faces cause indices
-		auto gf = c.geom_faces.begin();
-		std::cout << offset << std::endl;
-		while(gf != c.geom_faces.end()) {
-			glm::uvec3 face = *gf;
-			face.x += offset;
-			face.y += offset;
-			face.z += offset;
-			floor_faces.push_back(face);
-			++gf;
-		}
-
-		// insert extra faces to connect to the previous chunk
-		int floorWidth = pow(2, kFloorSize);
-		if(i > 2) {
-			int l_offset = (i - 3) * floorWidth * floorWidth;
-			std::cout << "interp " << i << " " << l_offset << std::endl;
-			// faces bordering tile to the negative x
-			for(int z = 0; z < floorWidth - 1; z++) {
-				int a = l_offset + floorWidth * z + (floorWidth - 1);
-				int b = l_offset + floorWidth * (z + 1) + (floorWidth - 1);
-				int c = offset + floorWidth * z;
-				int d = offset + floorWidth * (z + 1);
-
-				floor_faces.push_back(glm::uvec3(a, b, c));
-				floor_faces.push_back(glm::uvec3(b, d, c));
-			}
-		}
-
-		floor_normals.insert(floor_normals.end(), c.geom_normals.begin(), c.geom_normals.end());
-		floor_uv.insert(floor_uv.end(), c.geom_uv.begin(), c.geom_uv.end());
-	}
-
+	stich_chunks(chunks, floor_verts, floor_faces, floor_normals, floor_uv);
+	
 	std::cout << "Created floor" << std::endl;
 
 	// Create water data

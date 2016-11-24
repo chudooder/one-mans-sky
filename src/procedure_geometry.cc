@@ -6,34 +6,6 @@
 #include <debuggl.h>
 #include <string>
 
-glm::vec4 compute_vertex_normal(
-	const int i, 
-	const int j, 
-	const int width, 
-	const std::vector<glm::vec4>& floor_vertices)
-{
-	glm::vec3 p = glm::vec3(floor_vertices[i * width + j]);
-	glm::vec3 n0 = glm::normalize(glm::cross(
-		-p + glm::vec3(floor_vertices[(i - 1) * width + (j - 1)]),
-		-p + glm::vec3(floor_vertices[i * width + (j - 1)])));
-	glm::vec3 n1 = glm::normalize(glm::cross(
-		-p + glm::vec3(floor_vertices[(i - 1) * width + j]),
-		-p + glm::vec3(floor_vertices[(i - 1) * width + (j - 1)])));
-	glm::vec3 n2 = glm::normalize(glm::cross(
-		-p + glm::vec3(floor_vertices[i * width + (j + 1)]),
-		-p + glm::vec3(floor_vertices[(i - 1) * width + j])));
-	glm::vec3 n3 = glm::normalize(glm::cross(
-		-p + glm::vec3(floor_vertices[(i + 1) * width + (j + 1)]),
-		-p + glm::vec3(floor_vertices[i * width + (j + 1)])));
-	glm::vec3 n4 = glm::normalize(glm::cross(
-		-p + glm::vec3(floor_vertices[(i + 1) * width + j]),
-		-p + glm::vec3(floor_vertices[(i + 1) * width + (j + 1)])));
-	glm::vec3 n5 = glm::normalize(glm::cross(
-		-p + glm::vec3(floor_vertices[i * width + (j - 1)]),
-		-p + glm::vec3(floor_vertices[(i + 1) * width + j])));
-	return glm::vec4((n0 + n1 + n2 + n3 + n4 + n5) / 6.0f, 1.0f);
-}
-
 float noise_to_height(float val) {
 	return kFloorY + kFloorHeight * val * val * val;
 	// return kFloorY + kFloorHeight * val;
@@ -47,8 +19,6 @@ T clamp(T low, T high, T val) {
 void create_floor(
 	glm::vec4 position,
 	std::vector<glm::vec4>& floor_vertices, 
-	std::vector<glm::uvec3>& floor_faces,
-	std::vector<glm::vec4>& floor_normals,
 	std::vector<glm::vec2>& floor_uv)
 {
 	int width = pow(2, kFloorSize);
@@ -69,81 +39,6 @@ void create_floor(
 			floor_uv.push_back(glm::vec2(uv_sep * j, uv_sep * i));
 		}
 	}
-
-	// normals
-	for(int i = 0; i < width; i++) {	// row
-		for(int j = 0; j < width; j++) {	// col
-			if(i == 0 || i == width-1 || j == 0 || j == width-1) {
-				//TODO: some interpolation of these
-				floor_normals.push_back(glm::vec4(0.0, 1.0, 0.0, 1.0));
-				continue;
-			}
-
-			floor_normals.push_back(compute_vertex_normal(i, j, width, floor_vertices));
-		}
-	}
-
-	// faces
-	for(int i = 1; i < width; i++) {
-		for(int j = 1; j < width; j++) {
-			// draw face for square (i-1, j-1) -> (i, j)
-			floor_faces.push_back(glm::uvec3(
-				i * width + j,
-				(i - 1) * width + j,
-				i * width + (j - 1)));
-			floor_faces.push_back(glm::uvec3(
-				i * width + (j - 1),
-				(i - 1) * width + j,
-				(i - 1) * width + (j - 1)));
-		}
-	}
-
-	// erosion
-
-	/*
-	for(int t = 0; t < 5; t++) {
-		std::vector<glm::vec4> eroded = floor_vertices;
-		for(int i = 1; i < width - 1; i++) {
-			for(int j = 1; j < width - 1; j++) {
-				// check the normal at this point. If the angle from the y axis
-				// is more than 45 degrees, then shift the point down and
-				// recompute normals.
-
-				glm::vec4 normal = floor_normals[i * width + j];
-				float angle = std::acos(glm::dot(glm::vec3(normal), glm::vec3(0, 1, 0)));
-
-				if (angle > 0.6) {	// 0.785 = pi / 4
-					// erode to lowest point out of neighboring points
-					float minY = floor_vertices[i * width + j].y;
-					for(int r = i-1; r < i+2; r++) {
-						for(int c = j-1; c < j+2; c++) {
-							if(floor_vertices[r * width + c].y < minY) {
-								minY = floor_vertices[r * width + c].y;
-							}
-						}
-					}
-
-					eroded[i * width + j].y -= 0.8 * (floor_vertices[i * width + j].y - minY);
-				}
-			}
-		}
-		floor_vertices = eroded;
-
-		// recompute normals
-		for(int i = 0; i < width; i++) {	// row
-			for(int j = 0; j < width; j++) {	// col
-				if(i == 0 || i == width-1 || j == 0 || j == width-1) {
-					//TODO: some interpolation of these
-					floor_normals[i * width + j] = glm::vec4(0.0, 1.0, 0.0, 1.0);
-					continue;
-				}
-
-				floor_normals[i * width + j] = compute_vertex_normal(i, j, width, floor_vertices);
-			}
-		}
-	}
-	*/
-	
 }
 
 void create_water(
@@ -180,14 +75,14 @@ void create_water(
 	}
 }
 
-float blerp(float a, float b, float c, float d, float x, float y) {
+float blerp(float a, float b, float c, float d, float u, float v) {
 	/*
 	a b
 
 	c d
 	*/
-	return (1.0f - y) * ((1.0f - x) * a + x * b)
-		+ y * ((1.0f - x) * c + x * d);
+	return (1.0f - u) * ((1.0f - v) * a + v * b)
+		+ u * ((1.0f - v) * c + v * d);
 }
 
 void create_skybox(
@@ -222,7 +117,6 @@ void create_skybox(
 vector<vector<float>> random_noise(int size) {
 	int width = pow(2, size);
 	vector<vector<float>> noise(width, vector<float>(width, 0.0f));
-	std::cout << "width = " << width << std::endl;
 	for(int i = 0; i < width; i++) {
 		for(int j = 0; j < width; j++) {
 			noise[i][j] = ((float) rand() / RAND_MAX);
@@ -238,9 +132,7 @@ struct RandomPatch {
 	// depth == number of smaller patches to generate
 	RandomPatch(int seed, int size, int depth) {
 		srand(seed);
-		std::cout << "Creating patch of size " << size << " and depth " << depth << std::endl;
 		for(int cur_depth = 0; cur_depth < depth; ++cur_depth) {
-			std::cout << "cur_depth = " << cur_depth << std::endl;
 			noise_levels.push_back(random_noise(size - depth + cur_depth + 1));
 		}
 	}
@@ -259,18 +151,18 @@ float get_patch_value(
 {
 	int width = patches[0].noise_levels[cur_depth].size();
 	if(i < 0) {
-		patch -= 1;
+		patch -= 3;
 		i = width + i;
 	} else if(i >= width) {
-		patch += 1;
+		patch += 3;
 		i = i - width;
 	}
 
 	if(j < 0) {
-		patch -= 3;
+		patch -= 1;
 		j = width + j;
 	} else if(j >= width) {
-		patch += 3;
+		patch += 1;
 		j = j - width;
 	}
 
@@ -289,9 +181,9 @@ vector<vector<float>> perlin_noise(float x, float z, int size, int depth) {
 	 6 7 8
 	*/
 	for(int i = 0; i < 9; i++) {
-		float xpos = x + ((i % 3) - 1) * pow(2, size);
-		float zpos = z + ((i / 3) - 1) * pow(2, size);
-		int seed = (int) x * 15485863 + z;
+		int xpos = (int)(x + ((i % 3) - 1) * kFloorWidth);
+		int zpos = (int)(z + ((i / 3) - 1) * kFloorWidth);
+		int seed = xpos * 15485863 + zpos;
 		patches.push_back(RandomPatch(seed, size, depth));
 	}
 
@@ -300,7 +192,6 @@ vector<vector<float>> perlin_noise(float x, float z, int size, int depth) {
 	int width = pow(2, size); // final upsampled size
 	for(int cur_depth = 0; cur_depth < depth - 1; ++cur_depth) {
 		int factor = pow(2, depth - cur_depth - 1);
-		std::cout << "Upsampling, cur_depth = " << cur_depth << ", factor = " << factor << std::endl;
 		vector<vector<float>> upsampled(width, vector<float>(width, 0.0f));
 		for(int i = 0; i < width; ++i) {
 			for(int j = 0; j < width; ++j) {
@@ -313,8 +204,8 @@ vector<vector<float>> perlin_noise(float x, float z, int size, int depth) {
 				c = get_patch_value(patches, 4, cur_depth, i2, j/factor);
 				d = get_patch_value(patches, 4, cur_depth, i2, j2);
 
-				float u = (float) (j % factor) / factor;
-				float v = (float) (i % factor) / factor;
+				float u = (float) (i % factor) / factor;
+				float v = (float) (j % factor) / factor;
 
 				float val = blerp(a, b, c, d, u, v);
 
@@ -332,24 +223,11 @@ vector<vector<float>> perlin_noise(float x, float z, int size, int depth) {
 				if(oct == 0) {
 					noise[i][j] += octave[i][j];
 				} else {
-					noise[i][j] += pow(0.4, oct) * octave[i][j];
+					noise[i][j] += pow(0.4, oct) * (octave[i][j] - 0.5f);
 				}
 			}
 		}
 	}
-
-	// write noise to file
-	unsigned char pixels[(int) (pow(2, size) * pow(2, size) * 3)];
-	int index = 0;
-	for(int i = 0; i < pow(2, size); i++) {
-		for(int j = 0; j < pow(2, size); j++) {
-			char val = (char) (noise[i][j] * 256);
-			pixels[index++] = val;
-			pixels[index++] = val;
-			pixels[index++] = val;
-		}
-	}
-	SaveJPEG("noise_" + std::to_string((int)x) + "_" + std::to_string((int)z) + ".jpg", pow(2, size), pow(2, size), &pixels[0]);
 
 	return noise;
 };

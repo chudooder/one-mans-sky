@@ -69,11 +69,11 @@ void Aircraft::physicsStep(float time){
 	airspeed += (weight + thrust + drag + lift) * time;
 
 	// Stability
-	// vec3 stabAxis = cross(look, glm::normalize(airspeed));
-	// if(length(stabAxis) > 0){
-	// 	up = rotate(up, STABILITY * length(airspeed) * length(stabAxis) * time, stabAxis);
-	// 	look = rotate(look, STABILITY * length(airspeed) * length(stabAxis) * time, stabAxis);
-	// }
+	vec3 stabAxis = cross(look, glm::normalize(airspeed));
+	if(length(stabAxis) > 0){
+		up = rotate(up, STABILITY * length(airspeed) * length(stabAxis) * time, stabAxis);
+		look = rotate(look, STABILITY * length(airspeed) * length(stabAxis) * time, stabAxis);
+	}
 
 	// Debug
 	if(TELEMETRY){
