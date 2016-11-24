@@ -126,6 +126,17 @@ GLFWwindow* init_glefw()
 	return ret;
 }
 
+void generate_chunks(std::vector<Chunk>& chunks, float cx, float cz) {
+	// Create floor data
+	for(int i=0; i<kChunkDraw; i++) {
+		for(int j=0; j<kChunkDraw; j++) {
+			chunks.push_back(Chunk(
+				cx + kFloorWidth * (j - kChunkDraw / 2), 
+				cz + kFloorWidth * (i - kChunkDraw / 2)));
+		}
+	}
+}
+
 int main(int argc, char* argv[])
 {
 	GLFWwindow *window = init_glefw();
@@ -150,19 +161,14 @@ int main(int argc, char* argv[])
 
 	std::vector<Chunk> chunks;
 
-	// Create floor data
-	for(int i=0; i<kChunkDraw; i++) {
-		for(int j=0; j<kChunkDraw; j++) {
-			chunks.push_back(Chunk(kFloorXMin + kFloorWidth * j, kFloorZMin + kFloorWidth * i));
-		}
-	}
+	generate_chunks(chunks, 0, 0);
 
 	std::vector<glm::vec4> floor_verts;
 	std::vector<glm::uvec3> floor_faces;
 	std::vector<glm::vec4> floor_normals;
 	std::vector<glm::vec2> floor_uv;
 
-	stich_chunks(chunks, floor_verts, floor_faces, floor_normals, floor_uv);
+	stitch_chunks(chunks, floor_verts, floor_faces, floor_normals, floor_uv);
 	
 	std::cout << "Created floor" << std::endl;
 
@@ -170,7 +176,13 @@ int main(int argc, char* argv[])
 	std::vector<glm::vec4> water_vertices;
 	std::vector<glm::uvec3> water_faces;
 	std::vector<glm::vec2> water_uv;
-	create_water(water_vertices, water_faces, water_uv);
+	create_water(
+		glm::vec4(
+			0.0f - kFloorWidth * (kChunkDraw / 2),
+			0.0f,
+			0.0f - kFloorWidth * (kChunkDraw / 2),
+			1.0f),
+		water_vertices, water_faces, water_uv);
 
 
 	glm::vec4 light_position = glm::vec4(kFloorXMax, 5000.0f, kFloorZMax, 1.0f);
@@ -348,6 +360,39 @@ int main(int argc, char* argv[])
 		
 		// Then draw floor.
 		if (draw_floor) {
+			// do we need to regenerate the terrain?
+			int cx = (int) (aircraft.position.x / kFloorWidth) * kFloorWidth;
+			int cz = (int) (aircraft.position.z / kFloorWidth) * kFloorWidth;
+			Chunk& center = chunks[chunks.size() / 2 + 1];
+			if(cx != center.x && cz != center.z) {
+				// regenerate terrain
+				chunks.clear();
+				generate_chunks(chunks, cx, cz);
+				floor_verts.clear();
+				floor_faces.clear();
+				floor_normals.clear();
+				floor_uv.clear();
+				stitch_chunks(chunks, floor_verts, floor_faces, floor_normals, floor_uv);
+				floor_pass.updateVBO(0, floor_verts.data(), floor_verts.size());
+				floor_pass.updateVBO(1, floor_normals.data(), floor_normals.size());
+				floor_pass.updateVBO(2, floor_uv.data(), floor_faces.size());
+				floor_refl_pass.updateVBO(0, floor_verts.data(), floor_verts.size());
+				floor_refl_pass.updateVBO(1, floor_normals.data(), floor_normals.size());
+				floor_refl_pass.updateVBO(2, floor_uv.data(), floor_faces.size());
+
+				// regenerate water
+				water_vertices.clear();
+				water_faces.clear();
+				water_uv.clear();
+				create_water(glm::vec4(
+					cx - kFloorWidth * (kChunkDraw / 2),
+					0.0f,
+					cz - kFloorWidth * (kChunkDraw / 2),
+					1.0f),
+					water_vertices, water_faces, water_uv);
+				water_pass.updateVBO(0, water_vertices.data(), water_vertices.size());
+				water_pass.updateVBO(1, water_uv.data(), water_uv.size());
+			}
 			floor_pass.setup();
 			CHECK_GL_ERROR(glDrawElements(GL_TRIANGLES, floor_faces.size() * 3, GL_UNSIGNED_INT, 0));
 		}

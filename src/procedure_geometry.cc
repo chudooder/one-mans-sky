@@ -42,6 +42,7 @@ void create_floor(
 }
 
 void create_water(
+	glm::vec4 position,
 	std::vector<glm::vec4>& water_vertices, 
 	std::vector<glm::uvec3>& water_faces,
 	std::vector<glm::vec2>& water_uv)
@@ -52,9 +53,9 @@ void create_water(
 	for(int i = 0; i < width; i++) {	// row
 		for(int j = 0; j < width; j++) {	// col
 			water_vertices.push_back(glm::vec4(
-				kFloorXMin + sep * j,
+				position.x + sep * j,
 				0,
-				kFloorZMin + sep * i,
+				position.z + sep * i,
 				1.0f));
 			water_uv.push_back(glm::vec2(uv_sep * j, uv_sep * i));
 		}

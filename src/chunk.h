@@ -18,7 +18,7 @@ public:
 
 };
 
-void stich_chunks(
+void stitch_chunks(
 	std::vector<Chunk>& chunks,
 	std::vector<glm::vec4>& floor_verts,
 	std::vector<glm::uvec3>& floor_faces,

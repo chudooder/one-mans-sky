@@ -42,7 +42,7 @@ class Aircraft {
 public:
 	float throttle = 1.0f;
 	glm::vec3 airspeed = glm::vec3(0.0f, 0.0f, 100.0f);
-	glm::vec3 position = glm::vec3(0.0f, 100.0f, 100.0f);
+	glm::vec3 position = glm::vec3(0.0f, 500.0f, 100.0f);
 	glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
 	glm::vec3 look = glm::vec3(0.0f, 0.0f, 1.0f);
 

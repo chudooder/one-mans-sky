@@ -19,6 +19,7 @@ void create_floor(
 	std::vector<glm::vec2>& floor_uv);
 
 void create_water(
+	glm::vec4 position,
 	std::vector<glm::vec4>& water_vertices, 
 	std::vector<glm::uvec3>& water_faces,
 	std::vector<glm::vec2>& water_uv);

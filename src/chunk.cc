@@ -39,7 +39,7 @@ glm::vec4 compute_vertex_normal(
 	return glm::vec4((n0 + n1 + n2 + n3 + n4 + n5) / 6.0f, 1.0f);
 }
 
-void stich_chunks(
+void stitch_chunks(
 	std::vector<Chunk>& chunks,
 	std::vector<glm::vec4>& floor_verts,
 	std::vector<glm::uvec3>& floor_faces,

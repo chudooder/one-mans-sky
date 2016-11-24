@@ -32,7 +32,7 @@ const int kFloorSeed = std::rand();
 
 const float kSkySize = 2.0f;
 
-const int kChunkDraw = 4;
+const int kChunkDraw = 3;
 
 
 #endif
