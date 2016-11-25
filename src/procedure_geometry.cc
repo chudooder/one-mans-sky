@@ -5,6 +5,7 @@
 #include "jpegio.h"
 #include <debuggl.h>
 #include <string>
+#include <list>
 
 float noise_to_height(float val) {
 	return kFloorY + kFloorHeight * val * val * val;
@@ -126,16 +127,36 @@ vector<vector<float>> random_noise(int size) {
 	return noise;
 }
 
+struct RandomPatch;
+list<RandomPatch> patch_cache;
+
 struct RandomPatch {
+
+	int seed;
 	vector<vector<vector<float>>> noise_levels;
-	vector<vector<vector<float>>> upsampled;
 
 	// depth == number of smaller patches to generate
-	RandomPatch(int seed, int size, int depth) {
+	RandomPatch(int seed, int size, int depth) : seed(seed) {
+		// scan cache for hit
+		for(auto rp : patch_cache) {
+			if(rp.seed == seed) {
+				noise_levels = rp.noise_levels;
+				// std::cout << "Cache hit!" << std::endl;
+				return;
+			}
+		}
+
+		// if no hit, generate and add to cache
 		srand(seed);
 		for(int cur_depth = 0; cur_depth < depth; ++cur_depth) {
 			noise_levels.push_back(random_noise(size - depth + cur_depth + 1));
 		}
+
+		if(patch_cache.size() > 15) {
+			patch_cache.pop_back();
+		}
+		patch_cache.push_front(*this);
+		// std::cout << "Cache miss, size = " << patch_cache.size() << std::endl;
 	}
 
 	float val(int cur_depth, int i, int j) const {

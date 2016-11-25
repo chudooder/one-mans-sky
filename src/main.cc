@@ -430,10 +430,12 @@ int main(int argc, char* argv[])
 		// Then draw floor.
 		if (draw_floor) {
 			// do we need to regenerate the terrain?
-			int cx = (int) (aircraft.position.x / kFloorWidth) * kFloorWidth;
-			int cz = (int) (aircraft.position.z / kFloorWidth) * kFloorWidth;
+			int cx, cz;
+			cx = (int) floor(aircraft.position.x / kFloorWidth) * kFloorWidth;
+			cz = (int) floor(aircraft.position.z / kFloorWidth) * kFloorWidth;
 			Chunk* center = chunks[chunks.size() / 2];
 			if(cx != center->x || cz != center->z) {
+				std::cout << cx << " " << cz << std::endl;
 				// regenerate terrain
 				generate_chunks(chunks, cx, cz);
 				floor_verts.clear();
