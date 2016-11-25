@@ -23,7 +23,7 @@ const float kFloorXMin = -2048.0f;
 const float kFloorXMax = kFloorXMin + 3 * kFloorWidth;
 const float kFloorZMin = -2048.0f;
 const float kFloorZMax = kFloorZMin + 3 * kFloorWidth;
-const float kFloorY = -100.0f;
+const float kFloorY = -80.0f;
 const float kFloorHeight = 400.0f;
 
 const int kFloorSize = 7;	// 1024x1024

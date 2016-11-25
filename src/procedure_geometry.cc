@@ -8,7 +8,12 @@
 #include <list>
 
 float noise_to_height(float val) {
-	return kFloorY + kFloorHeight * val * val * val;
+	float mod_val;
+	if(val < 0.5)
+		mod_val = 0.5 / (1 + pow(2.818, -7 * val)) - 0.25;
+	else
+		mod_val = pow(2.818, val - 0.5) - 0.763;
+	return kFloorY + kFloorHeight * mod_val;
 	// return kFloorY + kFloorHeight * val;
 }
 
