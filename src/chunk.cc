@@ -40,7 +40,7 @@ glm::vec4 compute_vertex_normal(
 }
 
 void stitch_chunks(
-	std::vector<Chunk>& chunks,
+	std::vector<Chunk*>& chunks,
 	std::vector<glm::vec4>& floor_verts,
 	std::vector<glm::uvec3>& floor_faces,
 	std::vector<glm::vec4>& floor_normals,
@@ -54,8 +54,8 @@ void stitch_chunks(
 		for(int j = 0; j < total_width; j++) {
 			int chunk_index = (i / floor_width) * kChunkDraw + j / floor_width;
 			int val_index = (i % floor_width) * floor_width + j % floor_width;
-			floor_verts.push_back(chunks[chunk_index].geom_verts[val_index]);
-			floor_uv.push_back(chunks[chunk_index].geom_uv[val_index]);
+			floor_verts.push_back(chunks[chunk_index]->geom_verts[val_index]);
+			floor_uv.push_back(chunks[chunk_index]->geom_uv[val_index]);
 		}
 	}
 

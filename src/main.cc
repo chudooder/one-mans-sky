@@ -126,13 +126,82 @@ GLFWwindow* init_glefw()
 	return ret;
 }
 
-void generate_chunks(std::vector<Chunk>& chunks, float cx, float cz) {
+void generate_chunks(std::vector<Chunk*>& chunks, float cx, float cz) {
+	if(chunks.size() == 0){
+		for(int i=0; i<kChunkDraw; i++) {
+			for(int j=0; j<kChunkDraw; j++) {
+				chunks.push_back(new Chunk(
+					cx + kFloorWidth * (j - kChunkDraw / 2), 
+					cz + kFloorWidth * (i - kChunkDraw / 2)));
+			}
+		}
+		return;
+	}
+	Chunk* center = chunks[chunks.size() / 2];
+	float cur_x = center->x;
+	float cur_z = center->z;
+	int dx = (int)((cx - cur_x) / kFloorWidth);
+	int dz = (int)((cz - cur_z) / kFloorWidth);
+	if(dx == 1) {
+		for(int j = 0; j < kChunkDraw; j++) {
+			for(int i = 0; i < kChunkDraw; i++) {
+				Chunk* other = j == kChunkDraw - 1 ? 
+					nullptr : 
+					chunks[i * kChunkDraw + (j + 1)];
+				if(j == 0) {
+					delete chunks[i * kChunkDraw + j];
+				}
+				chunks[i * kChunkDraw + j] = other;
+			}
+		}
+	} else if (dx == -1) {
+		for(int j = kChunkDraw - 1; j >= 0; j--) {
+			for(int i = 0; i < kChunkDraw; i++) {
+				Chunk* other = j == 0 ? 
+					nullptr : 
+					chunks[i * kChunkDraw + (j - 1)];
+				if(j == kChunkDraw - 1) {
+					delete chunks[i * kChunkDraw + j];
+				}
+				chunks[i * kChunkDraw + j] = other;
+			}
+		}
+	}
+
+	if(dz == 1) {
+		for(int i = 0; i < kChunkDraw; i++) {
+			for(int j = 0; j < kChunkDraw; j++) {
+				Chunk* other = i == kChunkDraw - 1 ? 
+					nullptr : 
+					chunks[(i + 1) * kChunkDraw + j];
+				if(i == 0) {
+					delete chunks[i * kChunkDraw + j];
+				}
+				chunks[i * kChunkDraw + j] = other;
+			}
+		}
+	} else if (dz == -1) {
+		for(int i = kChunkDraw - 1; i >= 0; i--) {
+			for(int j = 0; j < kChunkDraw; j++) {
+				Chunk* other = i == 0 ? 
+					nullptr : 
+					chunks[(i - 1) * kChunkDraw + j];
+				if(i == kChunkDraw - 1) {
+					delete chunks[i * kChunkDraw + j];
+				}
+				chunks[i * kChunkDraw + j] = other;
+			}
+		}
+	}
+
 	// Create floor data
 	for(int i=0; i<kChunkDraw; i++) {
 		for(int j=0; j<kChunkDraw; j++) {
-			chunks.push_back(Chunk(
-				cx + kFloorWidth * (j - kChunkDraw / 2), 
-				cz + kFloorWidth * (i - kChunkDraw / 2)));
+			if(chunks[i * kChunkDraw + j] == nullptr) {
+				chunks[i * kChunkDraw + j] = new Chunk(
+					cx + kFloorWidth * (j - kChunkDraw / 2), 
+					cz + kFloorWidth * (i - kChunkDraw / 2));
+			}
 		}
 	}
 }
@@ -159,7 +228,7 @@ int main(int argc, char* argv[])
 	GLuint skybox_tex = create_skybox_tex();
 	std::cout << "Created skybox texture" << std::endl;
 
-	std::vector<Chunk> chunks;
+	std::vector<Chunk*> chunks;
 
 	generate_chunks(chunks, 0, 0);
 
@@ -363,10 +432,9 @@ int main(int argc, char* argv[])
 			// do we need to regenerate the terrain?
 			int cx = (int) (aircraft.position.x / kFloorWidth) * kFloorWidth;
 			int cz = (int) (aircraft.position.z / kFloorWidth) * kFloorWidth;
-			Chunk& center = chunks[chunks.size() / 2 + 1];
-			if(cx != center.x && cz != center.z) {
+			Chunk* center = chunks[chunks.size() / 2];
+			if(cx != center->x || cz != center->z) {
 				// regenerate terrain
-				chunks.clear();
 				generate_chunks(chunks, cx, cz);
 				floor_verts.clear();
 				floor_faces.clear();
