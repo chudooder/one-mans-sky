@@ -1,6 +1,6 @@
 R"zzz(
 #version 330 core
-uniform vec4 light_position;
+uniform vec4 light_direction;
 uniform vec3 camera_position;
 uniform int time;
 in vec4 vertex_position;
@@ -30,7 +30,7 @@ void main() {
 
 	// vs_normal = vec4(normalize(vec3(dx, 1, dz)), 1.0);
 	vs_normal = vec4(0.0, 1.0, 0.0, 0.0);
-	vs_light_direction = light_position - gl_Position;
+	vs_light_direction = light_direction;
 	vs_camera_direction = vec4(camera_position, 1.0) - gl_Position;
 	vs_uv = uv;
 }

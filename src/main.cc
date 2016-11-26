@@ -254,7 +254,8 @@ int main(int argc, char* argv[])
 		water_vertices, water_faces, water_uv);
 
 
-	glm::vec4 light_position = glm::vec4(kFloorXMax, 5000.0f, kFloorZMax, 1.0f);
+	glm::vec4 light_direction = glm::normalize(
+		glm::vec4(0.0f, 1.0f, 1.0f, 0.0f));
 	MatrixPointers mats; // Define MatrixPointers here for lambda to capture
 	GLuint reflection_buffer, reflection_texture;
 	init_refl_buffer(reflection_buffer, reflection_texture);
@@ -305,8 +306,8 @@ int main(int argc, char* argv[])
 	auto std_proj_data = [&mats]() -> const void* {
 		return mats.projection;
 	};
-	auto std_light_data = [&light_position]() -> const void* {
-		return &light_position[0];
+	auto std_light_data = [&light_direction]() -> const void* {
+		return &light_direction[0];
 	};
 	int time_millis = 0;
 	auto time_data = [&time_millis]() -> const void* {
@@ -317,7 +318,7 @@ int main(int argc, char* argv[])
 	ShaderUniform refl_view = { "view", matrix_binder, refl_view_data };
 	ShaderUniform std_camera = { "camera_position", vector3_binder, std_camera_data };
 	ShaderUniform std_proj = { "projection", matrix_binder, std_proj_data };
-	ShaderUniform std_light = { "light_position", vector_binder, std_light_data };
+	ShaderUniform std_light = { "light_direction", vector_binder, std_light_data };
 	ShaderUniform floor_model = { "model", matrix_binder, floor_model_data };
 	ShaderUniform skybox_model = { "model", matrix_binder, std_camera_data };
 	ShaderUniform std_time = { "time", int_binder, time_data };
