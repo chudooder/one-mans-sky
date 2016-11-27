@@ -114,3 +114,42 @@ MatrixPointers Aircraft::getMatrixPointers(){
 
 	return ret;
 }
+
+bool KinematicAircraft::input(int key, int action){
+	if(Aircraft::input(key, action)){
+		return true;
+	}
+	if(action != GLFW_PRESS && action != GLFW_RELEASE){
+		return false;
+	}
+	bool down = action == GLFW_PRESS;
+	switch(key){
+	case GLFW_KEY_LEFT: case GLFW_KEY_RIGHT:
+		translation.x += (down ? 1 : -1) * (key == GLFW_KEY_RIGHT ? 1 : -1);
+		return true;
+	case GLFW_KEY_UP: case GLFW_KEY_DOWN:
+		translation.y += (down ? 1 : -1) * (key == GLFW_KEY_UP ? 1 : -1);
+		return true;
+	case GLFW_KEY_PERIOD: case GLFW_KEY_COMMA:
+		translation.z += (down ? 1 : -1) * (key == GLFW_KEY_PERIOD ? 1 : -1);
+		return true;
+	}
+
+	return false;
+}
+
+void KinematicAircraft::physicsStep(float time){
+	vec3 pitchAxis = cross(up, look);
+	vec3 rollAxis = -look;
+	vec3 yawAxis = up;
+
+	up = rotate(up, pitchUp * PITCH * time, pitchAxis);
+	look = rotate(look, pitchUp * PITCH * time, pitchAxis);
+	up = rotate(up, rollLeft * ROLL * time, rollAxis);
+	look = rotate(look, rollLeft * ROLL * time, rollAxis);
+	up = rotate(up, yawLeft * YAW * time, yawAxis);
+	look = rotate(look, yawLeft * YAW * time, yawAxis);
+
+	position += 300 * time * (translation.x * cross(look, up) + translation.y * up + translation.z * look);
+
+}

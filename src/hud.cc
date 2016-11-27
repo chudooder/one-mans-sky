@@ -229,7 +229,7 @@ vec4 Heading::getClipArea(){
 }
 
 vec2 Heading::getTranslation() {
-	float heading = atan(-aircraft.look.x, aircraft.look.z);
+	float heading = atan(aircraft.look.x, -aircraft.look.z);
 	return {-heading / (2 * M_PI) * 360.0f / 70.0f, 0};
 }
 
