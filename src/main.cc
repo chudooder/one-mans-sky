@@ -218,6 +218,16 @@ int main(int argc, char* argv[])
 	Heading heading(aircraft);
 	Pitch pitch(aircraft);
 
+	// Sampler
+	unsigned sampler;
+	CHECK_GL_ERROR(glGenSamplers(1, &sampler));
+	CHECK_GL_ERROR(glSamplerParameteri(sampler, GL_TEXTURE_WRAP_S, GL_REPEAT));
+	CHECK_GL_ERROR(glSamplerParameteri(sampler, GL_TEXTURE_WRAP_T, GL_REPEAT));
+	CHECK_GL_ERROR(glSamplerParameteri(sampler, GL_TEXTURE_MAG_FILTER, GL_LINEAR));
+	CHECK_GL_ERROR(glSamplerParameteri(sampler, GL_TEXTURE_MIN_FILTER, GL_LINEAR));
+	CHECK_GL_ERROR(glBindSampler(0, (GLuint)(long)sampler));
+
+
 	// Get skybox geometry
 	std::vector<glm::vec4> skybox_vertices;
 	std::vector<glm::uvec3> skybox_faces;
