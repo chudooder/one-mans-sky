@@ -238,6 +238,9 @@ int main(int argc, char* argv[])
 	GLuint skybox_tex = create_skybox_tex();
 	std::cout << "Created skybox texture" << std::endl;
 
+	GLuint looping_tex = create_looping_noise_tex();
+	std::cout << "Created looping noise texture" << std::endl;
+
 	std::vector<Chunk*> chunks;
 
 	generate_chunks(chunks, 0, 0);
@@ -265,7 +268,7 @@ int main(int argc, char* argv[])
 
 
 	glm::vec4 light_direction = glm::normalize(
-		glm::vec4(0.0f, 1.0f, 1.0f, 0.0f));
+		glm::vec4(0.0f, 0.3f, 1.0f, 0.0f));
 	MatrixPointers mats; // Define MatrixPointers here for lambda to capture
 	GLuint reflection_buffer, reflection_texture;
 	init_refl_buffer(reflection_buffer, reflection_texture);
@@ -475,6 +478,7 @@ int main(int argc, char* argv[])
 				water_pass.updateVBO(1, water_uv.data(), water_uv.size());
 			}
 			floor_pass.setup();
+			CHECK_GL_ERROR(glBindTexture(GL_TEXTURE_2D, looping_tex));
 			CHECK_GL_ERROR(glDrawElements(GL_TRIANGLES, floor_faces.size() * 3, GL_UNSIGNED_INT, 0));
 		}
 

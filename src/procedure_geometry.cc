@@ -200,20 +200,7 @@ float get_patch_value(
 	return patches[patch].val(cur_depth, i, j);
 };
 
-vector<vector<float>> perlin_noise(float x, float z, int size, int depth) {
-	vector<RandomPatch> patches;
-	/*
-	 0 1 2
-	 3 4 5
-	 6 7 8
-	*/
-	for(int i = 0; i < 9; i++) {
-		int xpos = (int)(x + ((i % 3) - 1) * kFloorWidth);
-		int zpos = (int)(z + ((i / 3) - 1) * kFloorWidth);
-		int seed = xpos * 15485863 + zpos;
-		patches.push_back(RandomPatch(seed, size, depth));
-	}
-
+vector<vector<float>> upsample_patches(vector<RandomPatch>& patches, int size, int depth) {
 	vector<vector<vector<float>>> octaves;
 
 	int width = pow(2, size); // final upsampled size
@@ -257,7 +244,68 @@ vector<vector<float>> perlin_noise(float x, float z, int size, int depth) {
 	}
 
 	return noise;
+}
+
+/**
+ * Tiling perlin noise
+ */
+vector<vector<float>> perlin_noise(float x, float z, int size, int depth) {
+	vector<RandomPatch> patches;
+	/*
+	 0 1 2
+	 3 4 5
+	 6 7 8
+	*/
+	for(int i = 0; i < 9; i++) {
+		int xpos = (int)(x + ((i % 3) - 1) * kFloorWidth);
+		int zpos = (int)(z + ((i / 3) - 1) * kFloorWidth);
+		int seed = xpos * 15485863 + zpos;
+		patches.push_back(RandomPatch(seed, size, depth));
+	}
+
+	return upsample_patches(patches, size, depth);
 };
+
+/**
+ * Generates a patch of perlin noise that loops on itself,
+ * ideal for terrain textures or other random applications
+ */
+vector<vector<float>> looping_perlin_noise(int seed, int size, int depth) {
+	vector<RandomPatch> patches;
+	for(int i = 0; i < 9; i++) {
+		patches.push_back(RandomPatch(seed, size, depth));
+	}
+
+	return upsample_patches(patches, size, depth);
+}
+
+int create_looping_noise_tex() {
+	vector<vector<float>> noise = looping_perlin_noise(1, kFloorSize, kFloorDepth);
+	Image img;
+	for(auto r : noise) {
+		for(float val : r) {
+			unsigned char v = (unsigned char) (clamp(0.0f, 1.0f, val) * 255);
+			img.bytes.push_back(val);
+			img.bytes.push_back(val);
+			img.bytes.push_back(val);
+		}
+	}
+	img.width = noise[0].size();
+	img.height = noise.size();
+
+	GLuint tex;
+	glGenTextures(1, &tex);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, tex);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, img.width, img.height,
+		0, GL_RGB, GL_UNSIGNED_BYTE, img.bytes.data());
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	return tex;
+
+}
 
 int create_skybox_tex() {
 	// Load skybox image
@@ -272,11 +320,7 @@ int create_skybox_tex() {
 	// Bind skybox textures
 	GLuint skybox_tex;
 	glGenTextures(1, &skybox_tex);
-	std::cout << skybox_tex << std::endl;
 	glActiveTexture(GL_TEXTURE0);
-
-
-	std::cout << "Ready to bind textures" << std::endl;
 
 	glBindTexture(GL_TEXTURE_CUBE_MAP, skybox_tex);
 	for(int i = 0; i < 6; i++) {
@@ -286,8 +330,6 @@ int create_skybox_tex() {
 			GL_RGB, img.width, img.height, 0, GL_RGB, GL_UNSIGNED_BYTE, img.bytes.data()
 		));
 	}
-
-	std::cout << "Bound textures" << std::endl;
 
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);

@@ -22,7 +22,11 @@ void main() {
 	vec4 reflColor = texture(textureSampler, refl_uv);
 	vec4 ambient = vec4(0.4, 0.4, 0.9, 0.3);
 
-	fragment_color = (1 - reflectance) * ambient + reflectance * reflColor;
-	// fragment_color = reflColor;
+	vec4 sun_refl = normalize(-light_direction - 2 * dot(-light_direction, vertex_normal) * vertex_normal);
+	vec4 specular = 1.0 * pow(max(dot(camera_direction, sun_refl), 0.0), 15.0) 
+		* vec4(1.0, 1.0, 1.0, 1.0);
+
+	fragment_color = clamp((1 - reflectance) * ambient + reflectance * (reflColor + specular), 0.0, 1.0);
+	// fragment_color = specular;
 }
 )zzz"
