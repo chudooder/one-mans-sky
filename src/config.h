@@ -17,12 +17,14 @@ const float kFar = 5000.0f;
 const float kFov = 45.0f;
 
 // Floor info.
+const int kChunkDraw = 3;
+
 const float kFloorEps = 0.5 * (0.025 + 0.0175);
 const float kFloorWidth = 2048.0f;
 const float kFloorXMin = -2048.0f;
-const float kFloorXMax = kFloorXMin + 3 * kFloorWidth;
+const float kFloorXMax = kFloorXMin + kChunkDraw * kFloorWidth;
 const float kFloorZMin = -2048.0f;
-const float kFloorZMax = kFloorZMin + 3 * kFloorWidth;
+const float kFloorZMax = kFloorZMin + kChunkDraw * kFloorWidth;
 const float kFloorY = -80.0f;
 const float kFloorHeight = 400.0f;
 
@@ -32,7 +34,7 @@ const int kFloorSeed = std::rand();
 
 const float kSkySize = 2.0f;
 
-const int kChunkDraw = 3;
+
 
 
 #endif

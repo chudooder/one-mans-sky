@@ -206,6 +206,18 @@ void generate_chunks(std::vector<Chunk*>& chunks, float cx, float cz) {
 	}
 }
 
+void threaded_chunk_update(
+	std::vector<Chunk*>& chunks, 
+	float cx, 
+	float cz, 
+	int& status) {
+
+	std::cout << "- Generating chunks" << std::endl;
+	generate_chunks(chunks, cx, cz);
+	std::cout << "- Nice lah" << std::endl;
+	status = 1;
+}
+
 int main(int argc, char* argv[])
 {
 	GLFWwindow *window = init_glefw();
@@ -400,6 +412,8 @@ int main(int argc, char* argv[])
 	auto curTime = std::chrono::system_clock::now();
 	auto lastTime = curTime;
 
+	int status = 0;
+
 	while (!glfwWindowShouldClose(window)) {
 		// Setup some basic window stuff.
 		glfwGetFramebufferSize(window, &buffer_width, &buffer_height);
@@ -449,9 +463,21 @@ int main(int argc, char* argv[])
 			cz = (int) floor(aircraft.position.z / kFloorWidth) * kFloorWidth;
 			Chunk* center = chunks[chunks.size() / 2];
 			if(cx != center->x || cz != center->z) {
-				std::cout << cx << " " << cz << std::endl;
-				// regenerate terrain
-				generate_chunks(chunks, cx, cz);
+				if(status == 0) {
+					// spawn a new generating thread
+					status = -1;
+					std::cout << "Spin up new thread" << std::endl;
+					std::thread update(
+						threaded_chunk_update, 
+						std::ref(chunks), 
+						(float) cx, 
+						(float) cz, 
+						std::ref(status));
+					update.detach();
+				}
+			}
+			if (status == 1) {
+				// regenerate terrain once thread is done
 				floor_verts.clear();
 				floor_faces.clear();
 				floor_normals.clear();
@@ -476,6 +502,7 @@ int main(int argc, char* argv[])
 					water_vertices, water_faces, water_uv);
 				water_pass.updateVBO(0, water_vertices.data(), water_vertices.size());
 				water_pass.updateVBO(1, water_uv.data(), water_uv.size());
+				status = 0;
 			}
 			floor_pass.setup();
 			CHECK_GL_ERROR(glBindTexture(GL_TEXTURE_2D, looping_tex));
@@ -497,6 +524,7 @@ int main(int argc, char* argv[])
 
 			if (draw_floor) {
 				floor_refl_pass.setup();
+				CHECK_GL_ERROR(glBindTexture(GL_TEXTURE_2D, looping_tex));
 				CHECK_GL_ERROR(glDrawElements(GL_TRIANGLES, floor_faces.size() * 3, GL_UNSIGNED_INT, 0));
 			}
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
