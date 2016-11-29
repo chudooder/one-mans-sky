@@ -18,22 +18,40 @@ float rand(vec2 co){
     return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
 }
 
+float prand(vec2 co) {
+	return texture(textureSampler, vec2(fract(co.x), fract(co.y))).x;
+}
+
 void main() {
 	if(world_position.y < 0) {
 		discard;
 	} else {
 		vec3 snow = vec3(0.95, 0.95, 0.95);
 		vec3 grass = vec3(0.4, 0.9, 0.3);
+		vec3 sand = vec3(1.0, 0.93, 0.667);
 
 		// color ramp
 		float height = 500;
 		float floorY = -100;
 		float y = world_position.y - floorY;
 
-		vec3 color = grass * (height - y) / height
-			+ snow * y / height;
+		vec3 color;
 
-		vec3 texcolor = texture(textureSampler, uv_coords).xyz;
+		float random = prand(world_position.xz / 32);
+
+		if(world_position.y + 3 * random < 10) {
+			color = sand;
+		} else if (world_position.y + 3 * random > 350){
+			color = snow;
+		} else {
+			color = grass * (height - y) / height
+				+ snow * y / height;
+		}
+
+		color.x += 0.1 * random + 0.05;
+		color.y += -0.1 * random + 0.05;
+		color.z += 0.1 * random + 0.05;
+
 		float dot_nl = dot(normalize(light_direction), normalize(vertex_normal));
 		dot_nl = clamp(dot_nl, 0.0, 1.0);
 		fragment_color = vec4(color * dot_nl, 1.0);
