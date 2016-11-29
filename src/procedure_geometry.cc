@@ -279,26 +279,33 @@ vector<vector<float>> looping_perlin_noise(int seed, int size, int depth) {
 	return upsample_patches(patches, size, depth);
 }
 
-int create_looping_noise_tex() {
+GLuint create_looping_noise_tex() {
 	vector<vector<float>> noise = looping_perlin_noise(1, kFloorSize, kFloorDepth);
 	Image img;
+
 	for(auto r : noise) {
 		for(float val : r) {
 			unsigned char v = (unsigned char) (clamp(0.0f, 1.0f, val) * 255);
-			img.bytes.push_back(val);
-			img.bytes.push_back(val);
-			img.bytes.push_back(val);
+			img.bytes.push_back(v);
+			img.bytes.push_back(v);
+			img.bytes.push_back(v);
 		}
 	}
 	img.width = noise[0].size();
 	img.height = noise.size();
+	img.stride = 3;
+
+	std::cout << pow(2, kFloorSize) << std::endl;
+	std::cout << img.width << " " << img.height << std::endl;
+
+	// LoadJPEG("assets/lake1_rt.JPG", &img);
 
 	GLuint tex;
 	glGenTextures(1, &tex);
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, tex);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, img.width, img.height,
-		0, GL_RGB, GL_UNSIGNED_BYTE, img.bytes.data());
+	CHECK_GL_ERROR(glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, img.width, img.height,
+		0, GL_RGB, GL_UNSIGNED_BYTE, img.bytes.data()));
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glBindTexture(GL_TEXTURE_2D, 0);
@@ -307,7 +314,7 @@ int create_looping_noise_tex() {
 
 }
 
-int create_skybox_tex() {
+GLuint create_skybox_tex() {
 	// Load skybox image
 	std::vector<Image> images(6);
 	LoadJPEG("assets/lake1_rt.JPG", &images[0]);

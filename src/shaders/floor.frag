@@ -35,18 +35,25 @@ void main() {
 
 	vec3 color;
 
-	if(world_position.y + 3 * prand(world_position.xz / 8) < 10) {
+	float random = prand(world_position.xz / 32);
+
+	if(world_position.y + 3 * random < 10) {
 		color = sand;
-	} else if (world_position.y + 3 * prand(world_position.xz / 8) > 350){
+	} else if (world_position.y + 3 * random > 350){
 		color = snow;
 	} else {
 		color = grass * (height - y) / height
 			+ snow * y / height;
 	}
 
+	color.x += 0.1 * random + 0.05;
+	color.y += -0.1 * random + 0.05;
+	color.z += 0.1 * random + 0.05;
 
 	float dot_nl = dot(normalize(light_direction), normalize(vertex_normal));
 	dot_nl = clamp(dot_nl, 0.0, 1.0);
 	fragment_color = vec4(color * dot_nl, 1.0);
+	// fragment_color = vec4(random, random, random, 1.0);
+	// fragment_color = vec4(texture(textureSampler, vec2(0.5, 0.5)).xyz, 1.0);
 }
 )zzz"

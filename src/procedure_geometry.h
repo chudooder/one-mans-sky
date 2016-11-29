@@ -29,9 +29,9 @@ void create_skybox(
 	std::vector<glm::uvec3>& sky_faces,
 	const glm::vec3 center);
 
-int create_looping_noise_tex();
+GLuint create_looping_noise_tex();
 
-int create_skybox_tex();
+GLuint create_skybox_tex();
 
 vector<vector<float>> random_noise(int size);
 

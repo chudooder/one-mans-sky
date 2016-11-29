@@ -248,10 +248,10 @@ int main(int argc, char* argv[])
 	std::cout << "Created skybox vertices" << std::endl;
 
 	GLuint skybox_tex = create_skybox_tex();
-	std::cout << "Created skybox texture" << std::endl;
+	std::cout << "Created skybox texture at " << skybox_tex << std::endl;
 
 	GLuint looping_tex = create_looping_noise_tex();
-	std::cout << "Created looping noise texture" << std::endl;
+	std::cout << "Created looping noise texture at " << looping_tex << std::endl;
 
 	std::vector<Chunk*> chunks;
 
@@ -507,6 +507,7 @@ int main(int argc, char* argv[])
 			floor_pass.setup();
 			CHECK_GL_ERROR(glBindTexture(GL_TEXTURE_2D, looping_tex));
 			CHECK_GL_ERROR(glDrawElements(GL_TRIANGLES, floor_faces.size() * 3, GL_UNSIGNED_INT, 0));
+			CHECK_GL_ERROR(glBindTexture(GL_TEXTURE_2D, 0));
 		}
 
 		if (draw_water) {
@@ -520,12 +521,15 @@ int main(int argc, char* argv[])
 				CHECK_GL_ERROR(glBindTexture(GL_TEXTURE_CUBE_MAP, skybox_tex));
 				CHECK_GL_ERROR(glDrawElements(GL_TRIANGLES, skybox_faces.size() * 3, GL_UNSIGNED_INT, 0));
 				CHECK_GL_ERROR(glDepthMask(GL_TRUE));
+				CHECK_GL_ERROR(glBindTexture(GL_TEXTURE_CUBE_MAP, 0));
 			}
 
 			if (draw_floor) {
 				floor_refl_pass.setup();
 				CHECK_GL_ERROR(glBindTexture(GL_TEXTURE_2D, looping_tex));
 				CHECK_GL_ERROR(glDrawElements(GL_TRIANGLES, floor_faces.size() * 3, GL_UNSIGNED_INT, 0));
+				CHECK_GL_ERROR(glBindTexture(GL_TEXTURE_2D, 0));
+
 			}
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
