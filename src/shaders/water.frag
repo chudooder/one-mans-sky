@@ -20,13 +20,16 @@ void main() {
 
 	vec2 refl_uv = (screen_position.xy / screen_position.w * vec2(-1, 1) + 1.0) / 2.0;
 	vec4 reflColor = texture(textureSampler, refl_uv);
-	vec4 ambient = vec4(0.4, 0.4, 0.9, 0.3);
+
+	float dot_nl = dot(light_direction, vertex_normal);
+	dot_nl = clamp(dot_nl, 0.0, 1.0);
+	vec4 diffuse = dot_nl * vec4(0.3, 0.2, 0.9, 0.5);
 
 	vec4 sun_refl = normalize(-light_direction - 2 * dot(-light_direction, vertex_normal) * vertex_normal);
 	vec4 specular = 1.0 * pow(max(dot(camera_direction, sun_refl), 0.0), 15.0) 
-		* vec4(1.0, 1.0, 1.0, 1.0);
+		* vec4(1.0, 0.3, 0.3, 1.0);
 
-	fragment_color = clamp((1 - reflectance) * ambient + reflectance * (reflColor + specular), 0.0, 1.0);
+	fragment_color = clamp((1 - reflectance) * diffuse + reflectance * (reflColor + specular), 0.0, 1.0);
 	// fragment_color = specular;
 }
 )zzz"

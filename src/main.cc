@@ -16,6 +16,7 @@
 #include <vector>
 #include <memory>
 #include <chrono>
+#include <cmath>
 
 #include <glm/gtx/component_wise.hpp>
 #include <glm/gtx/rotate_vector.hpp>
@@ -222,7 +223,7 @@ int main(int argc, char* argv[])
 {
 	GLFWwindow *window = init_glefw();
 	glfwGetFramebufferSize(window, &buffer_width, &buffer_height);
-	KinematicAircraft aircraft(window);
+	Aircraft aircraft(window);
 	GUI gui(window, &aircraft);
 	Altimeter altimeter(aircraft);
 	Speedometer speedometer(aircraft);
@@ -279,8 +280,9 @@ int main(int argc, char* argv[])
 		water_vertices, water_faces, water_uv);
 
 
+	double light_angle = 0.0f;
 	glm::vec4 light_direction = glm::normalize(
-		glm::vec4(0.0f, 0.3f, 1.0f, 0.0f));
+		glm::vec4(0.0f, 0.0f, 0.0f, 0.0f));
 	MatrixPointers mats; // Define MatrixPointers here for lambda to capture
 	GLuint reflection_buffer, reflection_texture;
 	init_refl_buffer(reflection_buffer, reflection_texture);
@@ -429,6 +431,9 @@ int main(int argc, char* argv[])
 		glCullFace(GL_BACK);
 
         std::chrono::duration<double> diff = curTime-lastTime;
+
+
+
 		aircraft.physicsStep(diff.count());
 		mats = aircraft.getMatrixPointers();
 
@@ -442,6 +447,15 @@ int main(int argc, char* argv[])
 		refl_up[1] *= -1;
 
 		refl_view_mat = glm::lookAt(refl_pos, refl_pos + refl_look, refl_up);
+
+		// light direction
+		light_angle += 3.14159 * 2.0 * diff.count() / kDayLength;
+		light_direction = glm::normalize(glm::vec4(
+				0.0f,
+				std::cos(light_angle),
+				std::sin(light_angle),
+				0.0f
+			));
 
 		time_millis = std::chrono::duration_cast<std::chrono::milliseconds>(
 			std::chrono::system_clock::now().time_since_epoch()

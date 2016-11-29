@@ -33,7 +33,7 @@ const int kFloorDepth = 6;
 const int kFloorSeed = std::rand();
 
 const float kSkySize = 2.0f;
-
+const float kDayLength = 30.0f;
 
 
 
