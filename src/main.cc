@@ -213,9 +213,7 @@ void threaded_chunk_update(
 	float cz, 
 	int& status) {
 
-	std::cout << "- Generating chunks" << std::endl;
 	generate_chunks(chunks, cx, cz);
-	std::cout << "- Nice lah" << std::endl;
 	status = 1;
 }
 
@@ -432,9 +430,20 @@ int main(int argc, char* argv[])
 
         std::chrono::duration<double> diff = curTime-lastTime;
 
+        // calculate aircraft stuff
+        glm::vec3 new_position = aircraft.position + aircraft.airspeed * 0.5f;
+    	int aircraft_xi = (int) ((new_position.x 
+    		- (int) floor(new_position.x / kFloorWidth) * kFloorWidth) 
+    		* pow(2, kFloorSize) / kFloorWidth);
+    	aircraft_xi += kChunkDraw / 2 * pow(2, kFloorSize);
+        int aircraft_zi = (int) ((new_position.z
+        	- (int) floor(new_position.z / kFloorWidth) * kFloorWidth) 
+        	* pow(2, kFloorSize) / kFloorWidth);
+        aircraft_zi += kChunkDraw / 2 * pow(2, kFloorSize);
+        int aircraft_i = aircraft_zi * pow(2, kFloorSize) * kChunkDraw + aircraft_xi; 
+        float elevation = floor_verts[aircraft_i][1];
 
-
-		aircraft.physicsStep(diff.count());
+		aircraft.physicsStep(diff.count(), elevation);
 		mats = aircraft.getMatrixPointers();
 
 		glm::vec3 refl_pos = aircraft.position;
@@ -449,7 +458,7 @@ int main(int argc, char* argv[])
 		refl_view_mat = glm::lookAt(refl_pos, refl_pos + refl_look, refl_up);
 
 		// light direction
-		light_angle += 3.14159 * 2.0 * diff.count() / kDayLength;
+		// light_angle += 3.14159 * 2.0 * diff.count() / kDayLength;
 		light_direction = glm::normalize(glm::vec4(
 				0.0f,
 				std::cos(light_angle),
@@ -497,12 +506,15 @@ int main(int argc, char* argv[])
 				floor_normals.clear();
 				floor_uv.clear();
 				stitch_chunks(chunks, floor_verts, floor_faces, floor_normals, floor_uv);
+				std::cout << floor_verts[0] << std::endl;
+				std::cout << floor_verts[1] << std::endl;
+
 				floor_pass.updateVBO(0, floor_verts.data(), floor_verts.size());
 				floor_pass.updateVBO(1, floor_normals.data(), floor_normals.size());
-				floor_pass.updateVBO(2, floor_uv.data(), floor_faces.size());
+				floor_pass.updateVBO(2, floor_uv.data(), floor_uv.size());
 				floor_refl_pass.updateVBO(0, floor_verts.data(), floor_verts.size());
 				floor_refl_pass.updateVBO(1, floor_normals.data(), floor_normals.size());
-				floor_refl_pass.updateVBO(2, floor_uv.data(), floor_faces.size());
+				floor_refl_pass.updateVBO(2, floor_uv.data(), floor_uv.size());
 
 				// regenerate water
 				water_vertices.clear();
