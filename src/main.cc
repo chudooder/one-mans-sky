@@ -26,6 +26,7 @@
 
 #include <ctime>
 #include <thread>
+#include <atomic>
 
 int window_width = 800, window_height = 600;
 int buffer_width, buffer_height;
@@ -70,6 +71,13 @@ const char* water_vertex_shader =
 const char* water_fragment_shader =
 #include "shaders/water.frag"
 ;
+
+struct TerrainGeom {
+	std::vector<glm::vec4> verts;
+	std::vector<glm::uvec3> faces;
+	std::vector<glm::vec4> normals;
+	std::vector<glm::vec2> uv;
+};
 
 // FIXME: Add more shaders here.
 
@@ -208,12 +216,20 @@ void generate_chunks(std::vector<Chunk*>& chunks, float cx, float cz) {
 }
 
 void threaded_chunk_update(
+	TerrainGeom& geom,
 	std::vector<Chunk*>& chunks, 
 	float cx, 
 	float cz, 
-	int& status) {
+	std::atomic_int& status) {
 
 	generate_chunks(chunks, cx, cz);
+
+	geom.verts.clear();
+	geom.faces.clear();
+	geom.normals.clear();
+	geom.uv.clear();
+	stitch_chunks(chunks, geom.verts, geom.faces, geom.normals, geom.uv);
+
 	status = 1;
 }
 
@@ -256,12 +272,11 @@ int main(int argc, char* argv[])
 
 	generate_chunks(chunks, 0, 0);
 
-	std::vector<glm::vec4> floor_verts;
-	std::vector<glm::uvec3> floor_faces;
-	std::vector<glm::vec4> floor_normals;
-	std::vector<glm::vec2> floor_uv;
 
-	stitch_chunks(chunks, floor_verts, floor_faces, floor_normals, floor_uv);
+	TerrainGeom terrain;
+	TerrainGeom swapTerrain;
+
+	stitch_chunks(chunks, terrain.verts, terrain.faces, terrain.normals, terrain.uv);
 	
 	std::cout << "Created floor" << std::endl;
 
@@ -349,10 +364,10 @@ int main(int argc, char* argv[])
 	ShaderUniform std_time = { "time", int_binder, time_data };
 
 	RenderDataInput floor_pass_input;
-	floor_pass_input.assign(0, "vertex_position", floor_verts.data(), floor_verts.size(), 4, GL_FLOAT);
-	floor_pass_input.assign(1, "normal", floor_normals.data(), floor_normals.size(), 4, GL_FLOAT);
-	floor_pass_input.assign(2, "uv", floor_uv.data(), floor_uv.size(), 2, GL_FLOAT);
-	floor_pass_input.assign_index(floor_faces.data(), floor_faces.size(), 3);
+	floor_pass_input.assign(0, "vertex_position", terrain.verts.data(), terrain.verts.size(), 4, GL_FLOAT);
+	floor_pass_input.assign(1, "normal", terrain.normals.data(), terrain.normals.size(), 4, GL_FLOAT);
+	floor_pass_input.assign(2, "uv", terrain.uv.data(), terrain.uv.size(), 2, GL_FLOAT);
+	floor_pass_input.assign_index(terrain.faces.data(), terrain.faces.size(), 3);
 	RenderPass floor_pass(-1,
 			floor_pass_input,
 			{ vertex_shader, geometry_shader, floor_fragment_shader},
@@ -361,10 +376,10 @@ int main(int argc, char* argv[])
 			);
 
 	RenderDataInput floor_refl_pass_input;
-	floor_refl_pass_input.assign(0, "vertex_position", floor_verts.data(), floor_verts.size(), 4, GL_FLOAT);
-	floor_refl_pass_input.assign(1, "normal", floor_normals.data(), floor_normals.size(), 4, GL_FLOAT);
-	floor_refl_pass_input.assign(2, "uv", floor_uv.data(), floor_uv.size(), 2, GL_FLOAT);
-	floor_refl_pass_input.assign_index(floor_faces.data(), floor_faces.size(), 3);
+	floor_refl_pass_input.assign(0, "vertex_position", terrain.verts.data(), terrain.verts.size(), 4, GL_FLOAT);
+	floor_refl_pass_input.assign(1, "normal", terrain.normals.data(), terrain.normals.size(), 4, GL_FLOAT);
+	floor_refl_pass_input.assign(2, "uv", terrain.uv.data(), terrain.uv.size(), 2, GL_FLOAT);
+	floor_refl_pass_input.assign_index(terrain.faces.data(), terrain.faces.size(), 3);
 	RenderPass floor_refl_pass(-1,
 			floor_refl_pass_input,
 			{ vertex_shader, geometry_shader, floor_ref_fragment_shader},
@@ -412,7 +427,7 @@ int main(int argc, char* argv[])
 	auto curTime = std::chrono::system_clock::now();
 	auto lastTime = curTime;
 
-	int status = 0;
+	std::atomic_int status(0);
 
 	while (!glfwWindowShouldClose(window)) {
 		// Setup some basic window stuff.
@@ -441,7 +456,7 @@ int main(int argc, char* argv[])
         	* pow(2, kFloorSize) / kFloorWidth);
         aircraft_zi += kChunkDraw / 2 * pow(2, kFloorSize);
         int aircraft_i = aircraft_zi * pow(2, kFloorSize) * kChunkDraw + aircraft_xi; 
-        float elevation = floor_verts[aircraft_i][1];
+        float elevation = terrain.verts[aircraft_i][1];
 
 		aircraft.physicsStep(diff.count(), elevation);
 		mats = aircraft.getMatrixPointers();
@@ -489,9 +504,9 @@ int main(int argc, char* argv[])
 				if(status == 0) {
 					// spawn a new generating thread
 					status = -1;
-					std::cout << "Spin up new thread" << std::endl;
 					std::thread update(
 						threaded_chunk_update, 
+						std::ref(swapTerrain),
 						std::ref(chunks), 
 						(float) cx, 
 						(float) cz, 
@@ -501,20 +516,13 @@ int main(int argc, char* argv[])
 			}
 			if (status == 1) {
 				// regenerate terrain once thread is done
-				floor_verts.clear();
-				floor_faces.clear();
-				floor_normals.clear();
-				floor_uv.clear();
-				stitch_chunks(chunks, floor_verts, floor_faces, floor_normals, floor_uv);
-				std::cout << floor_verts[0] << std::endl;
-				std::cout << floor_verts[1] << std::endl;
-
-				floor_pass.updateVBO(0, floor_verts.data(), floor_verts.size());
-				floor_pass.updateVBO(1, floor_normals.data(), floor_normals.size());
-				floor_pass.updateVBO(2, floor_uv.data(), floor_uv.size());
-				floor_refl_pass.updateVBO(0, floor_verts.data(), floor_verts.size());
-				floor_refl_pass.updateVBO(1, floor_normals.data(), floor_normals.size());
-				floor_refl_pass.updateVBO(2, floor_uv.data(), floor_uv.size());
+				swap(terrain, swapTerrain);
+				floor_pass.updateVBO(0, terrain.verts.data(), terrain.verts.size());
+				floor_pass.updateVBO(1, terrain.normals.data(), terrain.normals.size());
+				floor_pass.updateVBO(2, terrain.uv.data(), terrain.uv.size());
+				floor_refl_pass.updateVBO(0, terrain.verts.data(), terrain.verts.size());
+				floor_refl_pass.updateVBO(1, terrain.normals.data(), terrain.normals.size());
+				floor_refl_pass.updateVBO(2, terrain.uv.data(), terrain.uv.size());
 
 				// regenerate water
 				water_vertices.clear();
@@ -532,7 +540,7 @@ int main(int argc, char* argv[])
 			}
 			floor_pass.setup();
 			CHECK_GL_ERROR(glBindTexture(GL_TEXTURE_2D, looping_tex));
-			CHECK_GL_ERROR(glDrawElements(GL_TRIANGLES, floor_faces.size() * 3, GL_UNSIGNED_INT, 0));
+			CHECK_GL_ERROR(glDrawElements(GL_TRIANGLES, terrain.faces.size() * 3, GL_UNSIGNED_INT, 0));
 			CHECK_GL_ERROR(glBindTexture(GL_TEXTURE_2D, 0));
 		}
 
@@ -553,7 +561,7 @@ int main(int argc, char* argv[])
 			if (draw_floor) {
 				floor_refl_pass.setup();
 				CHECK_GL_ERROR(glBindTexture(GL_TEXTURE_2D, looping_tex));
-				CHECK_GL_ERROR(glDrawElements(GL_TRIANGLES, floor_faces.size() * 3, GL_UNSIGNED_INT, 0));
+				CHECK_GL_ERROR(glDrawElements(GL_TRIANGLES, terrain.faces.size() * 3, GL_UNSIGNED_INT, 0));
 				CHECK_GL_ERROR(glBindTexture(GL_TEXTURE_2D, 0));
 
 			}
