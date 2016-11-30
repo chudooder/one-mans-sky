@@ -47,7 +47,7 @@ void stitch_chunks(
 	std::vector<glm::vec2>& floor_uv) 
 {
 	int offset = floor_verts.size();
-	// interleave vertices
+	// interleave vertices, z-axis major order
 	int floor_width = pow(2, kFloorSize);
 	int total_width = kChunkDraw * floor_width;
 	for(int i = 0; i < total_width; i++) {

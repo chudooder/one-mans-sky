@@ -48,7 +48,7 @@ public:
 	Aircraft(GLFWwindow* window);
 
 	virtual bool input(int key, int action);
-	virtual void physicsStep(float time);
+	virtual void physicsStep(float time, float elevation);
 	MatrixPointers getMatrixPointers();
 };
 

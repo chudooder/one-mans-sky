@@ -222,15 +222,14 @@ void threaded_chunk_update(
 	float cz, 
 	std::atomic_int& status) {
 
-	std::cout << "- Generating chunks" << std::endl;
 	generate_chunks(chunks, cx, cz);
+
 	geom.verts.clear();
 	geom.faces.clear();
 	geom.normals.clear();
 	geom.uv.clear();
 	stitch_chunks(chunks, geom.verts, geom.faces, geom.normals, geom.uv);
 
-	std::cout << "- Nice lah" << std::endl;
 	status = 1;
 }
 
@@ -446,9 +445,20 @@ int main(int argc, char* argv[])
 
         std::chrono::duration<double> diff = curTime-lastTime;
 
+        // calculate aircraft stuff
+        glm::vec3 new_position = aircraft.position + aircraft.airspeed * 0.5f;
+    	int aircraft_xi = (int) ((new_position.x 
+    		- (int) floor(new_position.x / kFloorWidth) * kFloorWidth) 
+    		* pow(2, kFloorSize) / kFloorWidth);
+    	aircraft_xi += kChunkDraw / 2 * pow(2, kFloorSize);
+        int aircraft_zi = (int) ((new_position.z
+        	- (int) floor(new_position.z / kFloorWidth) * kFloorWidth) 
+        	* pow(2, kFloorSize) / kFloorWidth);
+        aircraft_zi += kChunkDraw / 2 * pow(2, kFloorSize);
+        int aircraft_i = aircraft_zi * pow(2, kFloorSize) * kChunkDraw + aircraft_xi; 
+        float elevation = terrain.verts[aircraft_i][1];
 
-
-		aircraft.physicsStep(diff.count());
+		aircraft.physicsStep(diff.count(), elevation);
 		mats = aircraft.getMatrixPointers();
 
 		glm::vec3 refl_pos = aircraft.position;
@@ -494,7 +504,6 @@ int main(int argc, char* argv[])
 				if(status == 0) {
 					// spawn a new generating thread
 					status = -1;
-					std::cout << "Spin up new thread" << std::endl;
 					std::thread update(
 						threaded_chunk_update, 
 						std::ref(swapTerrain),
