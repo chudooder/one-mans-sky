@@ -26,6 +26,7 @@
 
 #include <ctime>
 #include <thread>
+#include <atomic>
 
 int window_width = 800, window_height = 600;
 int buffer_width, buffer_height;
@@ -219,7 +220,7 @@ void threaded_chunk_update(
 	std::vector<Chunk*>& chunks, 
 	float cx, 
 	float cz, 
-	int& status) {
+	std::atomic_int& status) {
 
 	std::cout << "- Generating chunks" << std::endl;
 	generate_chunks(chunks, cx, cz);
@@ -427,7 +428,7 @@ int main(int argc, char* argv[])
 	auto curTime = std::chrono::system_clock::now();
 	auto lastTime = curTime;
 
-	int status = 0;
+	std::atomic_int status(0);
 
 	while (!glfwWindowShouldClose(window)) {
 		// Setup some basic window stuff.
@@ -509,10 +510,10 @@ int main(int argc, char* argv[])
 				swap(terrain, swapTerrain);
 				floor_pass.updateVBO(0, terrain.verts.data(), terrain.verts.size());
 				floor_pass.updateVBO(1, terrain.normals.data(), terrain.normals.size());
-				floor_pass.updateVBO(2, terrain.uv.data(), terrain.faces.size());
+				floor_pass.updateVBO(2, terrain.uv.data(), terrain.uv.size());
 				floor_refl_pass.updateVBO(0, terrain.verts.data(), terrain.verts.size());
 				floor_refl_pass.updateVBO(1, terrain.normals.data(), terrain.normals.size());
-				floor_refl_pass.updateVBO(2, terrain.uv.data(), terrain.faces.size());
+				floor_refl_pass.updateVBO(2, terrain.uv.data(), terrain.uv.size());
 
 				// regenerate water
 				water_vertices.clear();
