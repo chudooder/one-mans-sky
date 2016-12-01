@@ -17,7 +17,7 @@ const float kFar = 5000.0f;
 const float kFov = 45.0f;
 
 // Floor info.
-const int kChunkDraw = 7;
+const int kChunkDraw = 5;
 
 const float kFloorEps = 0.5 * (0.025 + 0.0175);
 const float kFloorWidth = 2048.0f;
