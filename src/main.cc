@@ -7,6 +7,7 @@
 #include "chunk.h"
 #include "gui.h"
 #include "aircraft.h"
+#include "explosion.h"
 #include "hud.h"
 
 #include <algorithm>
@@ -418,11 +419,14 @@ int main(int argc, char* argv[])
 			{ "fragment_color" }
 			);
 
+	Explosion* explosion = nullptr;
+
 	float aspect = 0.0f;
 
 	bool draw_floor = true;
 	bool draw_water = true;
 	bool draw_skybox = true;
+	bool alive = true;
 
 	auto curTime = std::chrono::system_clock::now();
 	auto lastTime = curTime;
@@ -458,7 +462,18 @@ int main(int argc, char* argv[])
         int aircraft_i = aircraft_zi * pow(2, kFloorSize) * kChunkDraw + aircraft_xi; 
         float elevation = terrain.verts[aircraft_i][1];
 
-		aircraft.physicsStep(diff.count(), elevation);
+        if(aircraft.position[1] < elevation){
+        	alive = false;
+        	explosion = new Explosion(glm::vec4(aircraft.position, 1), std_view, std_proj);
+        	aircraft.position -= 200.0f * aircraft.look;
+        }
+
+        if(alive) {
+        	aircraft.physicsStep(diff.count());
+        } else {
+        	explosion->physicsStep(diff.count());
+        }
+
 		mats = aircraft.getMatrixPointers();
 
 		glm::vec3 refl_pos = aircraft.position;
@@ -574,11 +589,15 @@ int main(int argc, char* argv[])
 			CHECK_GL_ERROR(glDrawElements(GL_TRIANGLES, water_faces.size() * 3, GL_UNSIGNED_INT, 0));
 		}
 
-		altimeter.render();
-		speedometer.render();
-		throttometer.render();
-		heading.render();
-		pitch.render();
+		if(alive){
+			altimeter.render();
+			speedometer.render();
+			throttometer.render();
+			heading.render();
+			pitch.render();
+		} else {
+			explosion->render();
+		}
 		
 		// Poll and swap.
 		glfwPollEvents();
