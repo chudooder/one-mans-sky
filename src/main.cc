@@ -450,7 +450,7 @@ int main(int argc, char* argv[])
         std::chrono::duration<double> diff = curTime-lastTime;
 
         // calculate aircraft stuff
-        glm::vec3 new_position = aircraft.position + aircraft.airspeed * 0.5f;
+        glm::vec3 new_position = aircraft.position + aircraft.airspeed * (float) diff.count();
     	int aircraft_xi = (int) ((new_position.x 
     		- (int) floor(new_position.x / kFloorWidth) * kFloorWidth) 
     		* pow(2, kFloorSize) / kFloorWidth);
