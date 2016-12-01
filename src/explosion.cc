@@ -36,8 +36,6 @@ vec4 random_vec4(float mean_mag, float std_mag){
 	v = normalize(v);
 	v *= gauss(rng) * std_mag + mean_mag;
 
-	cout << v[0] << " " << v[1] << " " << v[2] << " " << v[3] << endl;
-
 	return v;
 }
 
