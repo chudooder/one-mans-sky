@@ -68,7 +68,7 @@ void SliderMeter::render(){
 	}
 	clip_area = getClipArea();
 	vec2 trans = getTranslation();
-	transform[3] = {trans.x, trans.y, 0, 1};
+	transform[3] = vec4(trans.x, trans.y, 0, 1);
 	line_pass->setup();	
 	CHECK_GL_ERROR(glDrawElements(GL_LINES, l_lines.size() * 2, GL_UNSIGNED_INT, 0));
 	text_pass->setup();
@@ -126,10 +126,10 @@ DialMeter::DialMeter(vec2 center, float width, float height)
 	);
 
 	// Caret
-	c_position.push_back({width/30, 0});
-	c_position.push_back({-width/30, 0});
-	c_position.push_back({0, 0.35 * height});
-	c_faces.push_back({2, 1, 0});
+	c_position.push_back(vec2(width/30, 0));
+	c_position.push_back(vec2(-width/30, 0));
+	c_position.push_back(vec2(0, 0.35 * height));
+	c_faces.push_back(uvec3(2, 1, 0));
 
 	RenderDataInput caret_input;
 	caret_input.assign(0, "position", c_position.data(), c_position.size(), 2, GL_FLOAT);
@@ -164,12 +164,12 @@ void DialMeter::updateTransform(){
 		* M_PI * 0.71;
 
 	mat4 rotation;
-	rotation[0] = {cos(-angle), sin(-angle), 0, 0};
-	rotation[1] = {-sin(-angle), cos(-angle), 0, 0};
-	rotation[2] = {0, 0, 1, 0};
-	rotation[3] = {0, 0, 0, 1};
+	rotation[0] = vec4(cos(-angle), sin(-angle), 0, 0);
+	rotation[1] = vec4(-sin(-angle), cos(-angle), 0, 0);
+	rotation[2] = vec4(0, 0, 1, 0);
+	rotation[3] = vec4(0, 0, 0, 1);
 	mat4 translation;
-	translation[3] = {center.x, center.y, 0, 1};
+	translation[3] = vec4(center.x, center.y, 0, 1);
 	transform = translation * rotation;
 }
 
@@ -179,7 +179,7 @@ void DialMeter::updateText(){
 	t_faces.clear();
 
 	Text t(getDialText(), 0.12f * width, 0.14 * height, 0.85f);
-	t.centerAlignGeom({center.x, center.y - height * 0.45}, t_position, t_uv, t_faces);
+	t.centerAlignGeom(vec2(center.x, center.y - height * 0.45), t_position, t_uv, t_faces);
 
 	text_pass->updateVBO(0, t_position.data(), t_position.size());
 	text_pass->updateVBO(1, t_uv.data(), t_uv.size());
@@ -187,11 +187,11 @@ void DialMeter::updateText(){
 }
 
 vec2 Altimeter::getTranslation(){
-	return {0, -aircraft.position[1]/1000.0f};
+	return vec2(0, -aircraft.position[1]/1000.0f);
 }
 
 vec4 Altimeter::getClipArea() {
-	return {0, 0.25, 1, 0.75};
+	return vec4(0, 0.25, 1, 0.75);
 }
 
 void Altimeter::makeText(vector<vec2>& position, vector<vec2>& uv, vector<uvec3>& faces) {
@@ -225,12 +225,12 @@ void Altimeter::makeCaret(vector<vec2>& position, vector<uvec3>& faces){
 }
 
 vec4 Heading::getClipArea(){
-	return {0.25, 0, 0.75, 1};
+	return vec4(0.25f, 0.0f, 0.75f, 1.0f);
 }
 
 vec2 Heading::getTranslation() {
 	float heading = atan(aircraft.look.x, -aircraft.look.z);
-	return {-heading / (2 * M_PI) * 360.0f / 70.0f, 0};
+	return vec2(-heading / (2 * M_PI) * 360.0f / 70.0f, 0.0f);
 }
 
 void Heading::makeText(vector<vec2>& position, vector<vec2>& uv, vector<uvec3>& faces) {
@@ -280,12 +280,12 @@ void Heading::makeCaret(vector<vec2>& position, vector<uvec3>& faces) {
 }
 
 vec4 Pitch::getClipArea(){
-	return {0, 0.3, 1, 0.7};
+	return vec4(0, 0.3, 1, 0.7);
 }
 
 vec2 Pitch::getTranslation() {
 	float pitch = asin(aircraft.look.y);
-	return {0,  - pitch / (2 * M_PI / 360.0f) / 50.0f};
+	return vec2(0,  - pitch / (2 * M_PI / 360.0f) / 50.0f);
 }
 
 void Pitch::makeText(vector<vec2>& position, vector<vec2>& uv, vector<uvec3>& faces) {

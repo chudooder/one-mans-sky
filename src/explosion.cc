@@ -32,7 +32,7 @@ auto float_binder = [](int loc, const void* data) {
 
 vec4 random_vec4(float mean_mag, float std_mag){
 
-	vec4 v = {gauss(rng), gauss(rng), gauss(rng), 0};
+	vec4 v(gauss(rng), gauss(rng), gauss(rng), 0);
 	v = normalize(v);
 	v *= gauss(rng) * std_mag + mean_mag;
 
