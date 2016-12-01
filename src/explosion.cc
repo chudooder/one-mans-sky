@@ -8,7 +8,7 @@
 using namespace glm;
 using namespace std;
 
-#define N_PARTICLES 20000
+#define N_PARTICLES 1000
 #define N_VELOCITY 150
 
 const char* Explosion::vert_sh = 
@@ -53,10 +53,10 @@ Explosion::Explosion(
 	for(int i = 0; i < N_PARTICLES; ++i){
 		d_position.push_back(random_vec4(N_VELOCITY, 0.7f * N_VELOCITY));
 		float start_r = gauss(rng) * 0.1;
-		float speed_r = gauss(rng) * 0.1;
-		float start_a = gauss(rng) * 0;
+		float speed_r = gauss(rng) * 0;
+		float start_a = gauss(rng) * 0.05;
 		float speed_a = gauss(rng) * 0;
-		color.push_back(vec4((1+ start_r) * 3, 2 + start_r, 2 + start_r, 1+ start_a));
+		color.push_back(vec4((1+ start_r) * 3, 1.7 + start_r, 1.7 + start_r, 1+ start_a));
 		d_color.push_back(vec4(-1.5 + speed_r, -1.5+ speed_r, -1.5+ speed_r, -0.5f+ speed_a));
 		index.push_back(i);
 	}
@@ -89,6 +89,6 @@ void Explosion::physicsStep(float timeDelta){
 
 void Explosion::render(){
 	particle_pass->setup();
-	CHECK_GL_ERROR(glPointSize(7));
+	CHECK_GL_ERROR(glPointSize(20));
 	CHECK_GL_ERROR(glDrawElements(GL_POINTS, N_PARTICLES, GL_UNSIGNED_INT, 0));
 }
