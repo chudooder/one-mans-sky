@@ -41,14 +41,14 @@ protected:
 public:
 	float throttle = 1.0f;
 	glm::vec3 airspeed = glm::vec3(0.0f, 0.0f, -100.0f);
-	glm::vec3 position = glm::vec3(0.0f, 500.0f, 100.0f);
+	glm::vec3 position = glm::vec3(0.0f, 500.0f, -200.0f);
 	glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
 	glm::vec3 look = glm::vec3(0.0f, 0.0f, -1.0f);
 
 	Aircraft(GLFWwindow* window);
 
 	virtual bool input(int key, int action);
-	virtual void physicsStep(float time, float elevation);
+	virtual void physicsStep(float time);
 	MatrixPointers getMatrixPointers();
 };
 

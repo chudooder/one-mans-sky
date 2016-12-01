@@ -42,16 +42,10 @@ bool Aircraft::input(int key, int action){
 	return false;
 }
 
-void Aircraft::physicsStep(float time, float elevation){
+void Aircraft::physicsStep(float time){
 
 	position += airspeed * time;
-
 	float altitude = position[1];
-
-	if(altitude < elevation) {
-		// blow up
-		exit(0);
-	}
 
 	float air_density = 1.225 * (ATMOSPHERE_ALT - altitude) / ATMOSPHERE_ALT;
 	float aoa = acos(dot(up, normalize(airspeed))) - M_PI/2;

@@ -101,6 +101,8 @@ RenderPass::RenderPass(int vao, // -1: create new VAO, otherwise use given VAO
 			glUniformBlockBinding(sp_, index, 0);
 		} else {
 			CHECK_GL_ERROR(unilocs_[i] = glGetUniformLocation(sp_, uniforms[i].name.c_str()));
+			// std::cout << "Uniform " << uniforms[i].name.c_str() << ": " << unilocs_[i] << std::endl;
+			
 		}
 	}
 	if (input_.hasMaterial()) {
