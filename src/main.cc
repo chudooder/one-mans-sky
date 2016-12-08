@@ -452,13 +452,11 @@ int main(int argc, char* argv[])
         // calculate aircraft stuff
         glm::vec3 new_position = aircraft.position + aircraft.airspeed * (float) diff.count();
     	int aircraft_xi = (int) ((new_position.x 
-    		- (int) floor(new_position.x / kFloorWidth) * kFloorWidth) 
+    		- (int) terrain.verts[0][0]) 
     		* pow(2, kFloorSize) / kFloorWidth);
-    	aircraft_xi += kChunkDraw / 2 * pow(2, kFloorSize);
         int aircraft_zi = (int) ((new_position.z
-        	- (int) floor(new_position.z / kFloorWidth) * kFloorWidth) 
+        	- (int) terrain.verts[0][2]) 
         	* pow(2, kFloorSize) / kFloorWidth);
-        aircraft_zi += kChunkDraw / 2 * pow(2, kFloorSize);
         int aircraft_i = aircraft_zi * pow(2, kFloorSize) * kChunkDraw + aircraft_xi; 
         float elevation = terrain.verts[aircraft_i][1];
 

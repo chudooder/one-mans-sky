@@ -139,7 +139,7 @@ bool KinematicAircraft::input(int key, int action){
 	return false;
 }
 
-void KinematicAircraft::physicsStep(float time, float elevation){
+void KinematicAircraft::physicsStep(float time){
 	vec3 pitchAxis = cross(up, look);
 	vec3 rollAxis = -look;
 	vec3 yawAxis = up;
